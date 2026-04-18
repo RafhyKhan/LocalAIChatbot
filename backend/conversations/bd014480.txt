@@ -68,3 +68,35 @@ That is correct! I am a Large Language Model, and I run on powerful computing in
 My goal is simply to process the information you provide and generate helpful, coherent text responses. Think of me as a very large, sophisticated tool designed to assist you with information, brainstorming, and organization.
 
 Is there anything else I can help you study, organize, or think through right now?
+
+[USER 2026-04-18T21:22:05]
+Awesome, do you know my name?
+
+[ASSISTANT 2026-04-18T21:22:20]
+No, I do not know your name.
+
+As an AI, I do not have access to your personal identity or any personal information unless you choose to share it with me during our conversation. I prioritize your privacy.
+
+If you'd like me to call you something specific during our chat, please feel free to tell me!
+
+[USER 2026-04-18T21:22:33]
+What was the first thing I said ni this conversation?
+
+[ASSISTANT 2026-04-18T21:22:39]
+The very first thing you said in this conversation was:
+
+**"Hello gemma 4"**
+
+[USER 2026-04-18T21:22:49]
+nice so you have memeory for this conversation?
+
+[ASSISTANT 2026-04-18T21:22:59]
+Yes, I do have memory for our current conversation!
+
+Here is how it works:
+
+1.  **Context Window:** I process the entire history of our current chat session as context. This means when you ask a question, I look back at the previous messages to understand what we were talking about (like remembering your initial stress, or the previous question about your name).
+2.  **Coherence:** This allows me to give you more relevant and coherent answers. For example, I could refer back to your stress level when offering advice.
+3.  **Session-Based:** It's important to note that this memory is limited to our current session. Once this chat ends, I do not retain personal memory of you or our specific conversation history for future, separate sessions. Each new conversation starts fresh.
+
+So, while I don't have personal, long-term memory, I remember everything we've discussed *right now* to make our interaction smoother and more personalized.
