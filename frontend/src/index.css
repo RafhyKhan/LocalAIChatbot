@@ -260,6 +260,26 @@ a { color: inherit; }
 .bubble-assistant th, .bubble-assistant td { border: 1px solid #333; padding: 7px 12px; }
 .bubble-assistant th { background: #1e1e1e; font-weight: 600; }
 
+/* ─── KaTeX math rendering ────────────────────────────────────── */
+/* Override KaTeX's default white-background styles for dark theme */
+.katex { color: var(--text); font-size: 1.05em; }
+
+/* Block math ($$...$$) — centred on its own line with breathing room */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 12px 4px;
+  margin: 12px 0;
+  text-align: center;
+}
+
+/* Inline math ($...$) — sits naturally in the text flow */
+.katex-inline { display: inline; }
+
+/* Scrollbar for wide equations on small screens */
+.katex-display::-webkit-scrollbar { height: 4px; }
+.katex-display::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
 /* Typing dots */
 .dots { display: inline-flex; gap: 5px; align-items: center; padding: 6px 0; }
 .dots span {

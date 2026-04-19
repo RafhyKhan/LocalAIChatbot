@@ -1,5 +1,8 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import type { Message } from "../types";
 
 export default function ChatMessage({ message }: { message: Message }) {
@@ -13,7 +16,12 @@ export default function ChatMessage({ message }: { message: Message }) {
   return (
     <div className="msg-row msg-assistant">
       <div className="bubble-assistant">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+        >
+          {message.content}
+        </ReactMarkdown>
       </div>
     </div>
   );
