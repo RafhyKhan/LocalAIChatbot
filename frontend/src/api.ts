@@ -26,7 +26,8 @@ export function streamChat(
   message: string,
   onDelta: (d: string) => void,
   onDone: () => void,
-  onError: (e: string) => void
+  onError: (e: string) => void,
+  onSearching?: () => void
 ): () => void {
   const controller = new AbortController();
 
@@ -51,6 +52,7 @@ export function streamChat(
           if (data.delta) onDelta(data.delta);
           else if (data.done) onDone();
           else if (data.error) onError(data.error);
+          else if (data.searching && onSearching) onSearching();
         }
       }
     } catch (e: unknown) {

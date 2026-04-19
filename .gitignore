@@ -1,5 +1,6 @@
 backend/conversations/
 backend/venv/
+backend/__pycache__/
 frontend/node_modules/
-__pycache__/
 .claude/
+.vs/

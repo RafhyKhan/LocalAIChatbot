@@ -18,6 +18,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [streamText, setStreamText] = useState("");
+  const [searching, setSearching] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadList(); }, []);
@@ -58,20 +59,23 @@ export default function App() {
     ]);
     setStreaming(true);
     setStreamText("");
+    setSearching(false);
 
     streamChat(
       activeId,
       message,
-      (d) => setStreamText((t) => t + d),
+      (d) => { setSearching(false); setStreamText((t) => t + d); },
       async () => {
         setStreaming(false);
+        setSearching(false);
         // Reload from file to get persisted state
         const data = await fetchConversation(activeId!);
         setMessages(data.messages ?? []);
         setStreamText("");
         loadList(); // refresh titles + order
       },
-      (err) => { console.error(err); setStreaming(false); setStreamText(""); }
+      (err) => { console.error(err); setStreaming(false); setStreamText(""); setSearching(false); },
+      () => setSearching(true)
     );
   }
 
@@ -97,7 +101,17 @@ export default function App() {
             <div className="messages">
               {messages.map((m, i) => <ChatMessage key={i} message={m} />)}
 
-              {streaming && !streamText && (
+              {searching && (
+                <div className="msg-row msg-assistant">
+                  <div className="bubble-assistant">
+                    <span className="search-indicator">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      Searching the web...
+                    </span>
+                  </div>
+                </div>
+              )}
+              {streaming && !streamText && !searching && (
                 <div className="msg-row msg-assistant">
                   <div className="bubble-assistant">
                     <span className="dots"><span /><span /><span /></span>
