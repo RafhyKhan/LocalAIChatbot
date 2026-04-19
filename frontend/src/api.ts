@@ -27,7 +27,8 @@ export function streamChat(
   onDelta: (d: string) => void,
   onDone: () => void,
   onError: (e: string) => void,
-  onSearching?: () => void
+  onSearching?: () => void,
+  onCalculating?: () => void
 ): () => void {
   const controller = new AbortController();
 
@@ -49,10 +50,11 @@ export function streamChat(
         for (const line of dec.decode(value).split("\n")) {
           if (!line.startsWith("data: ")) continue;
           const data = JSON.parse(line.slice(6));
-          if (data.delta) onDelta(data.delta);
-          else if (data.done) onDone();
-          else if (data.error) onError(data.error);
-          else if (data.searching && onSearching) onSearching();
+          if (data.delta)       onDelta(data.delta);
+          else if (data.done)   onDone();
+          else if (data.error)  onError(data.error);
+          else if (data.searching   && onSearching)   onSearching();
+          else if (data.calculating && onCalculating) onCalculating();
         }
       }
     } catch (e: unknown) {

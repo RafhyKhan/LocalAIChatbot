@@ -2,13 +2,16 @@
 FastAPI backend — the central hub of the app.
 
 Request flow for each chat message:
-  1. Build context     → system prompt + semantic memory (ChromaDB) + recent messages
-  2. Tool-call check   → send to Gemma WITH web_search tool defined (non-streaming)
-                         Gemma decides itself whether to call web_search()
-  3. Execute search    → if Gemma called the tool, run SearXNG and return results
-  4. Stream response   → final answer streamed back to the frontend
-  5. Persist result    → SQLite + ChromaDB + .txt file
-  6. Title             → generated after the very first exchange
+  1. Build context   → system prompt + semantic memory (ChromaDB) + recent messages
+  2. Tool-call loop  → Gemma decides whether to call web_search() and/or calculate()
+                       Loop runs non-streaming until Gemma stops calling tools
+  3. Stream response → final answer streamed to the frontend
+  4. Persist result  → SQLite + ChromaDB + .txt file
+  5. Title           → generated after the very first exchange
+
+Available tools Gemma can call:
+  web_search(query)     — queries SearXNG for real-time information
+  calculate(expression) — evaluates math accurately via SymPy
 """
 
 import asyncio
@@ -19,14 +22,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 
-import conversations as conv_store   # coordinates all three storage layers
-import memory                         # ChromaDB semantic search + FlashRank reranking
-import database as db                 # SQLite structured storage
-import search as searcher             # SearXNG client + SEARCH_TOOLS definition
+import conversations as conv_store
+import memory
+import database as db
+import search as searcher
+import calculator as calc
 
 app = FastAPI()
 
-# Allow the React frontend (Vite dev server on 5173) to call this backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -34,22 +37,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize SQLite tables on startup (safe — uses IF NOT EXISTS)
 db.init_db()
 
-# Gemma 4 running locally via Docker Desktop AI — OpenAI-compatible endpoint
 client = AsyncOpenAI(
     base_url="http://localhost:12434/v1",
     api_key="not-needed",
 )
 MODEL = "docker.io/ai/gemma4:E2B"
 
-RECENT_WINDOW = 8   # last N messages always included verbatim in context
-SEMANTIC_K    = 5   # top-K results from ChromaDB after FlashRank reranking
+RECENT_WINDOW = 8
+SEMANTIC_K    = 5
 
-# System prompt — sent with every request.
-# Explicitly declares web search capability upfront so Gemma doesn't refuse.
-# Uses the user's exact wording to be as direct as possible.
+# All tools available to Gemma — combined into one list for the API call
+ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS
+
+# System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
     "You are a helpful, concise assistant. "
     "You have access to real-time web search. "
@@ -57,7 +59,12 @@ SYSTEM_PROMPT = (
     "that requires up-to-date information, you will search the web automatically. "
     "Never say you cannot access the internet or that your knowledge has a cutoff — "
     "you can and should search when needed. "
-    "If you searched, mention what you found."
+    "If you searched, mention what you found. "
+    "\n\n"
+    "You also have access to a precise calculator tool. "
+    "ALWAYS use the calculator tool for any mathematical computation — "
+    "never attempt arithmetic, algebra, or numerical reasoning yourself. "
+    "You make math errors; the calculator does not."
 )
 
 
@@ -95,11 +102,7 @@ def delete_conversation(conv_id: str):
 # ── Title generation ──────────────────────────────────────────────
 
 async def _generate_title(conv_id: str, user_message: str, assistant_reply: str):
-    """
-    Fire-and-forget: generates a short conversation title after the first exchange.
-    Passes both sides of the conversation so the title reflects the actual topic
-    rather than just rephrasing the opening question.
-    """
+    """Fire-and-forget: short descriptive title based on the first full exchange."""
     try:
         exchange = f"User: {user_message}\nAssistant: {assistant_reply[:300]}"
         resp = await client.chat.completions.create(
@@ -123,28 +126,19 @@ async def _generate_title(conv_id: str, user_message: str, assistant_reply: str)
         if title:
             conv_store.update_title(conv_id, title[:60])
     except Exception:
-        pass  # non-critical — skip silently on failure
+        pass
 
 
 # ── Context builder ───────────────────────────────────────────────
 
 def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
     """
-    Build the base message list: system prompt + semantic memory + recent window.
-    Web search is NOT handled here — it's handled via tool calling in chat().
+    Build the starting message list for each request:
+      system prompt → semantic memory snippets → recent conversation → user message
 
-    Layers:
-      1. System prompt  — declares capabilities, sets behaviour
-      2. Semantic memory — top-K relevant past messages from ChromaDB (reranked)
-      3. Recent window   — last RECENT_WINDOW messages verbatim
-      4. User message    — the new message, appended last
+    Web search and calculation are NOT done here — Gemma decides via tool calling.
     """
-
-    # Recent messages from SQLite — always included verbatim ("working memory")
-    recent = conv_store.get_recent_messages(conv_id, limit=RECENT_WINDOW)
-
-    # SQLite IDs of recent messages — used to exclude them from ChromaDB results
-    # so the same message isn't injected twice
+    recent     = conv_store.get_recent_messages(conv_id, limit=RECENT_WINDOW)
     recent_ids = {m["id"] for m in recent}
 
     # Semantic recall: ANN retrieval → distance filter → FlashRank reranking → top-K
@@ -154,15 +148,13 @@ def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
         exclude_msg_ids=recent_ids,
     )
 
-    # Start with the base system prompt
     system_parts = [SYSTEM_PROMPT]
 
     if relevant:
-        # Tag each snippet with its origin (this conversation vs. past conversation)
         snippets = []
         for r in relevant:
             label = "User" if r["role"] == "user" else "Assistant"
-            tag = "(this conversation)" if r["conversation_id"] == conv_id else "(past conversation)"
+            tag   = "(this conversation)" if r["conversation_id"] == conv_id else "(past conversation)"
             snippets.append(f"[{label} {tag}]: {r['content']}")
         system_parts.append(
             "\nRelevant context recalled from memory:\n"
@@ -174,8 +166,26 @@ def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
     for m in recent:
         messages.append({"role": m["role"], "content": m["content"]})
     messages.append({"role": "user", "content": user_message})
-
     return messages
+
+
+# ── Tool executor ─────────────────────────────────────────────────
+
+async def _execute_tool(name: str, arguments: str) -> str:
+    """
+    Dispatch a tool call by name and return its string result.
+    Adding a new tool only requires adding a branch here and to ALL_TOOLS.
+    """
+    args = json.loads(arguments)
+
+    if name == "web_search":
+        return await searcher.web_search(args.get("query", ""))
+
+    if name == "calculate":
+        # SymPy is synchronous — runs instantly, no await needed
+        return calc.calculate(args.get("expression", ""))
+
+    return f"Unknown tool: {name}"
 
 
 # ── Chat endpoint ─────────────────────────────────────────────────
@@ -188,57 +198,56 @@ async def chat(req: ChatRequest):
 
     is_first = len(data["messages"]) == 0
 
-    # Build base context before persisting user message to avoid including it
-    # in the recent window or ChromaDB lookup
-    base_messages = _build_base_messages(req.conversation_id, req.message)
+    # Build base context before persisting so the new message isn't in the window
+    messages = _build_base_messages(req.conversation_id, req.message)
 
     # Persist user message to SQLite + txt + ChromaDB
     conv_store.add_message(req.conversation_id, "user", req.message)
 
     async def stream():
         """
-        Tool-calling chat flow:
+        Tool-calling loop, then stream the final response.
 
-        Step 1 — Send base messages to Gemma WITH the web_search tool defined.
-                  Gemma decides itself whether to call the tool.
-                  This call is NON-streaming so we can inspect the response.
+        Loop (non-streaming):
+          1. Call Gemma with ALL_TOOLS defined.
+          2. If Gemma emits tool_calls:
+               - notify frontend (searching / calculating indicator)
+               - execute each tool
+               - append [assistant tool_call msg] + [tool result msg] to messages
+               - go back to step 1 with updated messages
+          3. If no tool_calls: break out of the loop.
 
-        Step 2 — If Gemma emitted a tool_call:
-                    a. Notify frontend ("Searching the web...")
-                    b. Execute web_search() against SearXNG
-                    c. Append the tool result to the message list
-                    d. Stream the final response (Gemma now has the search results)
-
-        Step 3 — If no tool_call:
-                    Yield the response content directly — no second API call needed.
+        After loop: stream the final response (Gemma has all tool results in context).
+        If Gemma never called a tool, its first response is already the final answer —
+        yield it directly as a single delta (no second API call needed).
         """
-        full = ""
+        full          = ""
+        used_search   = False
+        used_calc     = False
+        final_content = None  # set if Gemma answered without any tool calls
+
         try:
-            # ── Step 1: Tool-call check (non-streaming) ───────────────
-            # Sending SEARCH_TOOLS lets Gemma call web_search() if it decides to.
-            # tool_choice="auto" lets Gemma decide freely — it won't be forced.
-            tool_response = await client.chat.completions.create(
-                model=MODEL,
-                messages=base_messages,
-                tools=searcher.SEARCH_TOOLS,
-                tool_choice="auto",
-                stream=False,
-            )
+            # ── Tool-calling loop ─────────────────────────────────
+            while True:
+                response = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=messages,
+                    tools=ALL_TOOLS,
+                    tool_choice="auto",
+                    stream=False,
+                )
 
-            tool_calls = tool_response.choices[0].message.tool_calls
+                tool_calls = response.choices[0].message.tool_calls
 
-            if tool_calls:
-                # ── Step 2: Gemma chose to search ────────────────────
-                yield f"data: {json.dumps({'searching': True})}\n\n"
+                if not tool_calls:
+                    # Gemma is done calling tools — its response is the final answer
+                    final_content = response.choices[0].message.content or ""
+                    break
 
-                # Build the follow-up message list:
-                # original messages + Gemma's tool_call message + our tool result
-                follow_up = list(base_messages)
-
-                # Append Gemma's assistant message (contains the tool_call request)
-                follow_up.append({
+                # Append Gemma's assistant message (contains the tool_call requests)
+                messages.append({
                     "role": "assistant",
-                    "content": tool_response.choices[0].message.content or "",
+                    "content": response.choices[0].message.content or "",
                     "tool_calls": [
                         {
                             "id": tc.id,
@@ -252,45 +261,53 @@ async def chat(req: ChatRequest):
                     ],
                 })
 
-                # Execute each tool call and append the result as a tool message
+                # Execute each tool call and append results
                 for tc in tool_calls:
-                    if tc.function.name == "web_search":
-                        args  = json.loads(tc.function.arguments)
-                        query = args.get("query", req.message)
-                        results = await searcher.web_search(query)
+                    name = tc.function.name
 
-                        # Tool result sent back to Gemma — must reference the tool_call_id
-                        follow_up.append({
-                            "role": "tool",
-                            "tool_call_id": tc.id,
-                            "content": results,
-                        })
+                    # Notify the frontend what's happening
+                    if name == "web_search":
+                        used_search = True
+                        yield f"data: {json.dumps({'searching': True})}\n\n"
+                    elif name == "calculate":
+                        used_calc = True
+                        yield f"data: {json.dumps({'calculating': True})}\n\n"
 
-                # Stream the final response — Gemma now has the search results in context
-                final = await client.chat.completions.create(
+                    result = await _execute_tool(name, tc.function.arguments)
+
+                    # Tool result — must reference the tool_call_id Gemma sent
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": result,
+                    })
+
+                # Loop back: Gemma may call more tools after seeing the results
+
+            # ── Stream (or yield) final response ──────────────────
+            if final_content is not None:
+                # Gemma never called a tool — answer came from the first response.
+                # Yield as a single delta (appears instantly — no waiting for a stream).
+                full = final_content
+                if full:
+                    yield f"data: {json.dumps({'delta': full})}\n\n"
+            else:
+                # Gemma used tools — stream the follow-up response so the user
+                # sees it generating in real-time (results can be lengthy)
+                stream_resp = await client.chat.completions.create(
                     model=MODEL,
-                    messages=follow_up,
+                    messages=messages,
                     stream=True,
                 )
-                async for chunk in final:
+                async for chunk in stream_resp:
                     delta = chunk.choices[0].delta.content or ""
                     if delta:
                         full += delta
                         yield f"data: {json.dumps({'delta': delta})}\n\n"
 
-            else:
-                # ── Step 3: No search needed — yield response directly ─
-                # Gemma already generated the full response in Step 1.
-                # Yield it as a single delta so the frontend renders it immediately.
-                content = tool_response.choices[0].message.content or ""
-                full = content
-                if full:
-                    yield f"data: {json.dumps({'delta': full})}\n\n"
-
-            # Persist the assistant response to all three stores
+            # Persist the complete assistant response
             conv_store.add_message(req.conversation_id, "assistant", full)
 
-            # Fire-and-forget title generation after the first exchange
             if is_first:
                 asyncio.create_task(
                     _generate_title(req.conversation_id, req.message, full)
