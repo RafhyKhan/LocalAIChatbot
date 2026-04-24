@@ -111,7 +111,7 @@ export default function WordWidget() {
       {!loading && entry && (
         <>
           {/* Label */}
-          <div className="fact-label">📖 Word of the Load</div>
+          <div className="fact-label">📖 Word of the Day</div>
 
           {/* Word + phonetic */}
           <div className="word-title">
