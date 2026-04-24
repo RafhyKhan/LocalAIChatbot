@@ -1,6 +1,6 @@
 import type { Conversation, ConversationDetail } from "./types";
 
-const BASE = "http://localhost:8000";
+export const BASE = "http://localhost:8000";
 
 export async function fetchConversations(): Promise<Conversation[]> {
   const r = await fetch(`${BASE}/api/conversations`);

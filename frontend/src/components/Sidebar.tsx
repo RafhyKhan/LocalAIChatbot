@@ -7,6 +7,8 @@ interface Props {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
+  page: "dashboard" | "chat";
+  onPageChange: (p: "dashboard" | "chat") => void;
 }
 
 function timeAgo(iso: string): string {
@@ -19,10 +21,35 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function Sidebar({ conversations, activeId, onSelect, onNew, onDelete }: Props) {
+export default function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, page, onPageChange }: Props) {
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
+        {/* Page toggle: dashboard ⇄ chat */}
+        <div className="page-toggle" title="Switch page">
+          <button
+            className={`page-toggle-btn${page === "dashboard" ? " active" : ""}`}
+            onClick={() => onPageChange("dashboard")}
+            title="Dashboard"
+          >
+            {/* Grid icon */}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          </button>
+          <button
+            className={`page-toggle-btn${page === "chat" ? " active" : ""}`}
+            onClick={() => onPageChange("chat")}
+            title="Chat"
+          >
+            {/* Chat bubble icon */}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+        </div>
+
         <div className="sidebar-brand">{APP_NAME}</div>
         <button className="icon-btn" onClick={onNew} title="New chat">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
