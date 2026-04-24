@@ -16,6 +16,9 @@ Available tools Gemma can call:
 
 import asyncio
 import json
+import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -27,6 +30,8 @@ import memory
 import database as db
 import search as searcher
 import calculator as calc
+import datetool
+import unittool
 
 app = FastAPI()
 
@@ -49,8 +54,12 @@ MODEL = "docker.io/ai/gemma4:E2B"
 RECENT_WINDOW = 16
 SEMANTIC_K    = 5
 
+#More Str Information Vairables
+CURRENT_LOCATION = "Calgary, Alberta, Canada"
+
 # All tools available to Gemma — combined into one list for the API call
-ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS
+# Update the static tool list in frontend/src/components/Sidebar.tsx when adding/removing tools here
+ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TOOLS + unittool.UNITTOOL_TOOLS
 
 # System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
@@ -68,6 +77,18 @@ SYSTEM_PROMPT = (
     "ALWAYS use the calculator tool for any mathematical computation — "
     "never attempt arithmetic, algebra, or numerical reasoning yourself. "
     "You make math errors; the calculator does not."
+    "\n\n"
+    "You have a date_diff tool. "
+    "ALWAYS use it for any calculation involving the difference between two dates — "
+    "never compute date gaps yourself."
+    "\n\n"
+    "You have a convert_units tool. "
+    "ALWAYS use it for any unit conversion — never estimate conversions yourself."
+    "\n\n"
+    "You are a helpful assistant, not an authoritative source of truth. "
+    "You can and do make mistakes. When uncertain, say so clearly. "
+    "Always distinguish between what you know from training and what you found via web search. "
+    "Encourage Rafhy to verify important information independently."
 )
 
 
@@ -170,7 +191,18 @@ def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
         exclude_msg_ids=recent_ids,
     )
 
-    system_parts = [SYSTEM_PROMPT]
+    # Inject exact current Calgary time so Gemma can answer time questions accurately
+    # and judge the freshness of web search results without relying on a search lookup
+    now = datetime.now(ZoneInfo("America/Edmonton"))
+    time_str = now.strftime("%A, %B %d, %Y · %I:%M %p %Z")
+    system_parts = [
+        SYSTEM_PROMPT,
+        (
+            f"\nThe current date and time in Calgary is: {time_str}. "
+            "This is exact and authoritative — do NOT search the web for the current time or date. "
+            "Use this value directly when asked."
+        ),
+    ]
 
     if relevant:
         snippets = []
@@ -206,6 +238,16 @@ async def _execute_tool(name: str, arguments: str) -> str:
     if name == "calculate":
         # SymPy is synchronous — runs instantly, no await needed
         return calc.calculate(args.get("expression", ""))
+
+    if name == "date_diff":
+        return datetool.date_diff(args.get("date1", ""), args.get("date2", ""))
+
+    if name == "convert_units":
+        return unittool.convert_units(
+            args.get("value", 0),
+            args.get("from_unit", ""),
+            args.get("to_unit", ""),
+        )
 
     return f"Unknown tool: {name}"
 
@@ -247,6 +289,7 @@ async def chat(req: ChatRequest):
         used_search   = False
         used_calc     = False
         final_content = None  # set if Gemma answered without any tool calls
+        all_sources: list[str] = []  # URLs collected from web_search results
 
         try:
             # ── Tool-calling loop ─────────────────────────────────
@@ -297,6 +340,10 @@ async def chat(req: ChatRequest):
 
                     result = await _execute_tool(name, tc.function.arguments)
 
+                    # Collect source URLs from web search results
+                    if name == "web_search":
+                        all_sources.extend(re.findall(r'https?://[^\s]+', result))
+
                     # Tool result — must reference the tool_call_id Gemma sent
                     messages.append({
                         "role": "tool",
@@ -335,7 +382,7 @@ async def chat(req: ChatRequest):
                     _generate_title(req.conversation_id, req.message, full)
                 )
 
-            yield f"data: {json.dumps({'done': True})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'sources': all_sources})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"

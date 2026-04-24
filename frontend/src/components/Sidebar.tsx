@@ -63,6 +63,16 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
       </div>
 
       <div className="sidebar-footer">
+        <div className="tool-list">
+          <p className="tool-list-label">Tools</p>
+          {/* Update this list manually when tools are added/removed in backend/main.py ALL_TOOLS */}
+          <div className="tool-items">
+            <span className="tool-item">🌐 web_search</span>
+            <span className="tool-item">⚡ calculate</span>
+            <span className="tool-item">📅 date_diff</span>
+            <span className="tool-item">📐 convert_units</span>
+          </div>
+        </div>
         <span className="model-tag">Gemma 4 · Docker</span>
       </div>
     </aside>

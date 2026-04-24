@@ -33,7 +33,8 @@ export function streamChat(
   onDone: () => void,
   onError: (e: string) => void,
   onSearching?: () => void,
-  onCalculating?: () => void
+  onCalculating?: () => void,
+  onSources?: (urls: string[]) => void
 ): () => void {
   const controller = new AbortController();
 
@@ -56,7 +57,7 @@ export function streamChat(
           if (!line.startsWith("data: ")) continue;
           const data = JSON.parse(line.slice(6));
           if (data.delta)       onDelta(data.delta);
-          else if (data.done)   onDone();
+          else if (data.done)   { if (onSources && data.sources?.length) onSources(data.sources); onDone(); }
           else if (data.error)  onError(data.error);
           else if (data.searching   && onSearching)   onSearching();
           else if (data.calculating && onCalculating) onCalculating();

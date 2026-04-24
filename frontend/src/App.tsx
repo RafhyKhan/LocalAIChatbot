@@ -21,6 +21,7 @@ export default function App() {
   const [streamText, setStreamText] = useState("");
   const [searching, setSearching] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [sources, setSources] = useState<string[]>([]);
   const [tokenInfo, setTokenInfo] = useState<{ used: number; limit: number; remaining: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +67,7 @@ export default function App() {
     setStreamText("");
     setSearching(false);
     setCalculating(false);
+    setSources([]);
 
     streamChat(
       activeId,
@@ -84,7 +86,8 @@ export default function App() {
       },
       (err) => { console.error(err); setStreaming(false); setStreamText(""); setSearching(false); setCalculating(false); },
       () => setSearching(true),
-      () => setCalculating(true)
+      () => setCalculating(true),
+      (urls) => setSources(urls)
     );
   }
 
@@ -141,6 +144,18 @@ export default function App() {
                 <div className="msg-row msg-assistant">
                   <div className="bubble-assistant" style={{ whiteSpace: "pre-wrap" }}>
                     {streamText}
+                  </div>
+                </div>
+              )}
+              {!streaming && sources.length > 0 && (
+                <div className="msg-row msg-assistant">
+                  <div className="bubble-assistant">
+                    <div className="source-list">
+                      <p className="source-list-label">Sources</p>
+                      {sources.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noreferrer">{url}</a>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
