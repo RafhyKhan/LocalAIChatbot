@@ -1,4 +1,5 @@
 import type { Conversation } from "../types";
+import { APP_NAME } from "../config";
 
 interface Props {
   conversations: Conversation[];
@@ -22,7 +23,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
-        <div className="sidebar-brand">LocalAI</div>
+        <div className="sidebar-brand">{APP_NAME}</div>
         <button className="icon-btn" onClick={onNew} title="New chat">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" />
