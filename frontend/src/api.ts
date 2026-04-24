@@ -21,6 +21,11 @@ export async function deleteConversation(id: string): Promise<void> {
   await fetch(`${BASE}/api/conversations/${id}`, { method: "DELETE" });
 }
 
+export async function fetchTokens(id: string): Promise<{ used: number; limit: number; remaining: number }> {
+  const r = await fetch(`${BASE}/api/conversations/${id}/tokens`);
+  return r.json();
+}
+
 export function streamChat(
   conversationId: string,
   message: string,

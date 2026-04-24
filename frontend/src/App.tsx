@@ -5,6 +5,7 @@ import {
   createConversation,
   fetchConversation,
   deleteConversation,
+  fetchTokens,
   streamChat,
 } from "./api";
 import Sidebar from "./components/Sidebar";
@@ -20,6 +21,7 @@ export default function App() {
   const [streamText, setStreamText] = useState("");
   const [searching, setSearching] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [tokenInfo, setTokenInfo] = useState<{ used: number; limit: number; remaining: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadList(); }, []);
@@ -34,6 +36,7 @@ export default function App() {
     setActiveId(id);
     setMessages(data.messages ?? []);
     setStreamText("");
+    setTokenInfo(await fetchTokens(id));
   }
 
   async function newConv() {
@@ -42,6 +45,7 @@ export default function App() {
     setActiveId(c.id);
     setMessages([]);
     setStreamText("");
+    setTokenInfo(null);
   }
 
   async function deleteConv(id: string) {
@@ -76,6 +80,7 @@ export default function App() {
         setMessages(data.messages ?? []);
         setStreamText("");
         loadList(); // refresh titles + order
+        setTokenInfo(await fetchTokens(activeId!));
       },
       (err) => { console.error(err); setStreaming(false); setStreamText(""); setSearching(false); setCalculating(false); },
       () => setSearching(true),
@@ -141,7 +146,7 @@ export default function App() {
               )}
               <div ref={bottomRef} />
             </div>
-            <InputArea onSend={send} disabled={streaming} />
+            <InputArea onSend={send} disabled={streaming} tokenInfo={tokenInfo} />
           </>
         )}
       </main>

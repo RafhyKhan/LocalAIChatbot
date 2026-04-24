@@ -53,12 +53,14 @@ ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS
 
 # System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
-    "You are a helpful, concise assistant. "
-    "You have access to real-time web search. "
+    "You are a helpful, concise assistant, to Rafhy Khan."
+    "You are in Calgary, Alberta, Canada."
+    "\n\n"
+    "You have access to real-time web search."
     "When asked about current events, news, prices, sports, weather, or anything "
     "that requires up-to-date information, you will search the web automatically. "
     "Never say you cannot access the internet or that your knowledge has a cutoff — "
-    "you can and should search when needed. "
+    "you can and should search the web when needed. "
     "If you searched, mention what you found. "
     "\n\n"
     "You also have access to a precise calculator tool. "
@@ -97,6 +99,25 @@ def get_conversation(conv_id: str):
 def delete_conversation(conv_id: str):
     conv_store.delete_conversation(conv_id)
     return {"ok": True}
+
+
+@app.get("/api/conversations/{conv_id}/tokens")
+def get_token_count(conv_id: str):
+    """
+    Estimate the number of tokens currently used by this conversation's context.
+    Uses a chars÷4 approximation (close enough for Gemma, no extra dependencies).
+    Counts: system prompt + last RECENT_WINDOW messages.
+    """
+    data = conv_store.get_conversation(conv_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    recent = conv_store.get_recent_messages(conv_id, limit=RECENT_WINDOW)
+    total_chars = len(SYSTEM_PROMPT) + sum(len(m["content"]) for m in recent)
+    used  = total_chars // 4
+    limit = 8192
+
+    return {"used": used, "limit": limit, "remaining": max(0, limit - used)}
 
 
 # ── Title generation ──────────────────────────────────────────────

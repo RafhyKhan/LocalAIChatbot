@@ -1,11 +1,19 @@
 import { useRef, useState } from "react";
 
+interface TokenInfo {
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
 export default function InputArea({
   onSend,
   disabled,
+  tokenInfo,
 }: {
   onSend: (msg: string) => void;
   disabled: boolean;
+  tokenInfo: TokenInfo | null;
 }) {
   const [text, setText] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -16,6 +24,14 @@ export default function InputArea({
     onSend(t);
     setText("");
     if (ref.current) ref.current.style.height = "auto";
+  }
+
+  // Colour the token count: green → yellow → red as it fills up
+  function tokenColour(used: number, limit: number): string {
+    const pct = used / limit;
+    if (pct < 0.65) return "var(--dim)";
+    if (pct < 0.85) return "#f59e0b";
+    return "#f87171";
   }
 
   return (
@@ -47,7 +63,18 @@ export default function InputArea({
           </svg>
         </button>
       </div>
-      <p className="input-hint">Enter to send · Shift+Enter for new line</p>
+      <div className="input-footer">
+        <p className="input-hint">Enter to send · Shift+Enter for new line</p>
+        {tokenInfo && (
+          <p
+            className="token-counter"
+            style={{ color: tokenColour(tokenInfo.used, tokenInfo.limit) }}
+            title="Estimated tokens in context (system prompt + last 8 messages)"
+          >
+            ~{tokenInfo.used.toLocaleString()} / {tokenInfo.limit.toLocaleString()} tokens
+          </p>
+        )}
+      </div>
     </div>
   );
 }

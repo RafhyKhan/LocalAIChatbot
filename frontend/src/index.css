@@ -355,4 +355,11 @@ a { color: inherit; }
 .send-active { background: var(--accent) !important; color: #000 !important; cursor: pointer !important; }
 .send-active:hover { opacity: .88; }
 
-.input-hint { margin-top: 7px; font-size: 11px; color: var(--dim); text-align: center; }
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 7px;
+}
+.input-hint { font-size: 11px; color: var(--dim); }
+.token-counter { font-size: 11px; font-variant-numeric: tabular-nums; transition: color .3s; }
