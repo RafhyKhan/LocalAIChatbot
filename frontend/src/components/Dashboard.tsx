@@ -38,7 +38,9 @@ import SortableWidget   from "./SortableWidget";
 import WeatherWidget    from "./widgets/WeatherWidget";
 import NewsWidget       from "./widgets/NewsWidget";
 import BookmarksWidget  from "./widgets/BookmarksWidget";
-import GreetingWidget   from "./widgets/GreetingWidget";
+import GreetingWidget    from "./widgets/GreetingWidget";
+import RandomFactWidget  from "./widgets/RandomFactWidget";
+import WordWidget        from "./widgets/WordWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -56,6 +58,8 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "news",      icon: "📰",  label: "BBC News",  description: "Latest headlines from BBC RSS",          colSpan: 1 },
   { id: "bookmarks", icon: "🔖",  label: "Bookmarks", description: "Personal URL bookmarks (localStorage)",  colSpan: 1 },
   { id: "greeting",  icon: "👋",  label: "Greeting",  description: "Personal greeting + random quote",       colSpan: 2 },
+  { id: "randomfact", icon: "🎲", label: "Random Fact", description: "Dad jokes, facts, poetry & more",        colSpan: 1 },
+  { id: "word",       icon: "📖", label: "Word of the Load", description: "Random word + dictionary definition", colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -63,8 +67,10 @@ function renderWidget(id: string) {
     case "weather":   return <WeatherWidget />;
     case "news":      return <NewsWidget />;
     case "bookmarks": return <BookmarksWidget />;
-    case "greeting":  return <GreetingWidget />;
-    default:          return null;
+    case "greeting":   return <GreetingWidget />;
+    case "randomfact": return <RandomFactWidget />;
+    case "word":       return <WordWidget />;
+    default:           return null;
   }
 }
 
