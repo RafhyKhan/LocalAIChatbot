@@ -33,6 +33,7 @@ import calculator as calc
 import datetool
 import unittool
 import browsertool
+import weathertool
 
 app = FastAPI()
 
@@ -60,7 +61,7 @@ CURRENT_LOCATION = "Calgary, Alberta, Canada"
 
 # All tools available to Gemma — combined into one list for the API call
 # Update the static tool list in frontend/src/components/Sidebar.tsx when adding/removing tools here
-ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TOOLS + unittool.UNITTOOL_TOOLS + browsertool.BROWSERTOOL_TOOLS
+ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TOOLS + unittool.UNITTOOL_TOOLS + browsertool.BROWSERTOOL_TOOLS + weathertool.WEATHER_TOOLS
 
 # System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
@@ -68,11 +69,17 @@ SYSTEM_PROMPT = (
     "You are in Calgary, Alberta, Canada."
     "\n\n"
     "You have access to real-time web search."
-    "When asked about current events, news, prices, sports, weather, or anything "
+    "When asked about current events, news, prices, sports, or anything "
     "that requires up-to-date information, you will search the web automatically. "
     "Never say you cannot access the internet or that your knowledge has a cutoff — "
     "you can and should search the web when needed. "
     "If you searched, mention what you found. "
+    "\n\n"
+    "You have a get_weather tool that provides real-time weather from wttr.in. "
+    "ALWAYS use this tool for ANY weather-related question — current conditions, "
+    "temperature, feels-like, humidity, wind, UV index, or forecast. "
+    "NEVER search the web for weather; the get_weather tool is faster and always accurate. "
+    "If the user does not specify a location, default to Calgary, Alberta."
     "\n\n"
     "You also have access to a precise calculator tool. "
     "ALWAYS use the calculator tool for any mathematical computation — "
@@ -252,6 +259,9 @@ async def _execute_tool(name: str, arguments: str) -> str:
 
     if name == "open_url":
         return browsertool.open_url(args.get("url", ""))
+
+    if name == "get_weather":
+        return weathertool.get_weather(args.get("location", "Calgary, Alberta"))
 
     return f"Unknown tool: {name}"
 
