@@ -71,6 +71,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
             <span className="tool-item">⚡ calculate</span>
             <span className="tool-item">📅 date_diff</span>
             <span className="tool-item">📐 convert_units</span>
+            <span className="tool-item">🔗 open_url</span>
           </div>
         </div>
         <span className="model-tag">Gemma 4 · Docker</span>

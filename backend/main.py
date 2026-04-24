@@ -32,6 +32,7 @@ import search as searcher
 import calculator as calc
 import datetool
 import unittool
+import browsertool
 
 app = FastAPI()
 
@@ -59,7 +60,7 @@ CURRENT_LOCATION = "Calgary, Alberta, Canada"
 
 # All tools available to Gemma — combined into one list for the API call
 # Update the static tool list in frontend/src/components/Sidebar.tsx when adding/removing tools here
-ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TOOLS + unittool.UNITTOOL_TOOLS
+ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TOOLS + unittool.UNITTOOL_TOOLS + browsertool.BROWSERTOOL_TOOLS
 
 # System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
@@ -248,6 +249,9 @@ async def _execute_tool(name: str, arguments: str) -> str:
             args.get("from_unit", ""),
             args.get("to_unit", ""),
         )
+
+    if name == "open_url":
+        return browsertool.open_url(args.get("url", ""))
 
     return f"Unknown tool: {name}"
 
