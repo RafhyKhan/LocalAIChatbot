@@ -25,7 +25,7 @@ function formatDate(d: Date): string {
 
 // ── Customise ─────────────────────────────────────────────────────────────────
 
-const GREETING  = "Hi Rafhy Khan!";   // ← change greeting text here
+const GREETING  = "Hi, Rafhy!";   // ← change greeting text here
 
 const QUOTE_URL = "https://react-http-57c1f-default-rtdb.firebaseio.com/quotes.json";
 //                 ↑ swap this URL to point at a different quotes endpoint
@@ -87,8 +87,8 @@ export default function GreetingWidget() {
           {/* ↑ The greeting renders here — change GREETING at the top of the file */}
         </div>
         <div className="greeting-datetime">
-          <span className="greeting-time">{formatTime(now)}</span>
-          <span className="greeting-date">{formatDate(now)}</span>
+          <span className="greeting-time"  style={{ fontSize: "1.5rem" }} >{formatTime(now)} | {formatDate(now)}</span>
+          {/*<span className="greeting-date">{formatDate(now)}</span>*/}
         </div>
       </div>
 
