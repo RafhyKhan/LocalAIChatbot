@@ -622,9 +622,110 @@ a { color: inherit; }
 .dashboard-toolbar {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
   padding: 0 0 10px;
   flex-shrink: 0;
 }
+
+/* Widget directory button */
+.dir-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--hover);
+  border: 1px solid var(--sidebar-border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all .15s;
+}
+.dir-btn:hover { color: var(--text); border-color: #555; }
+.dir-btn-active {
+  background: rgba(255,255,255,0.05);
+  border-color: #555;
+  color: var(--text);
+}
+
+/* Widget directory panel */
+.widget-directory {
+  background: var(--sidebar);
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+  animation: fadeIn .2s ease;
+}
+.dir-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.dir-title { font-size: 12px; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: .06em; }
+.dir-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: all .12s;
+}
+.dir-close:hover { color: var(--text); }
+
+.dir-empty { font-size: 13px; color: var(--dim); }
+
+.dir-list { display: flex; flex-direction: column; gap: 6px; }
+
+.dir-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--hover);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.dir-item-icon { font-size: 20px; flex-shrink: 0; }
+.dir-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dir-item-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.dir-item-desc  { font-size: 11px; color: var(--muted); }
+
+.dir-add-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.dir-add-btn:hover { opacity: .85; }
+
+/* Widget remove button (top-left, edit mode) */
+.widget-remove {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 20;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #f87171;
+  border-radius: 6px;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  transition: all .12s;
+}
+.widget-remove:hover { background: rgba(248, 113, 113, 0.25); border-color: #f87171; }
 
 .edit-toggle {
   display: flex;
