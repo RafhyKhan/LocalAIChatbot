@@ -34,6 +34,7 @@ import datetool
 import unittool
 import browsertool
 import weathertool
+import dashboard as dash_data
 
 app = FastAPI()
 
@@ -129,6 +130,18 @@ def get_conversation(conv_id: str):
 def delete_conversation(conv_id: str):
     conv_store.delete_conversation(conv_id)
     return {"ok": True}
+
+
+@app.get("/api/weather")
+def get_weather_forecast():
+    """7-day Calgary forecast from Open-Meteo (used by the dashboard widget)."""
+    return dash_data.get_forecast()
+
+
+@app.get("/api/news")
+def get_news_feed():
+    """Latest BBC News headlines from RSS (used by the dashboard widget)."""
+    return dash_data.get_news()
 
 
 @app.get("/api/conversations/{conv_id}/tokens")

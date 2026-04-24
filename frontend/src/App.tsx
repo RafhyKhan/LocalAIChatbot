@@ -8,12 +8,14 @@ import {
   fetchTokens,
   streamChat,
 } from "./api";
-import Sidebar from "./components/Sidebar";
+import Sidebar    from "./components/Sidebar";
+import Dashboard   from "./components/Dashboard";
 import ChatMessage from "./components/ChatMessage";
-import InputArea from "./components/InputArea";
+import InputArea   from "./components/InputArea";
 import "./index.css";
 
 export default function App() {
+  const [page, setPage] = useState<"dashboard" | "chat">("dashboard");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,6 +40,7 @@ export default function App() {
     setMessages(data.messages ?? []);
     setStreamText("");
     setTokenInfo(await fetchTokens(id));
+    setPage("chat"); // clicking a conversation always goes to chat
   }
 
   async function newConv() {
@@ -99,8 +102,13 @@ export default function App() {
         onSelect={selectConv}
         onNew={newConv}
         onDelete={deleteConv}
+        page={page}
+        onPageChange={setPage}
       />
 
+      {page === "dashboard" ? (
+        <Dashboard />
+      ) : (
       <main className="chat-main">
         {!activeId ? (
           <div className="welcome">
@@ -165,6 +173,7 @@ export default function App() {
           </>
         )}
       </main>
+      )}
     </div>
   );
 }
