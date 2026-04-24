@@ -52,7 +52,7 @@ def get_forecast() -> dict:
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={CALGARY_LAT}&longitude={CALGARY_LNG}"
         "&daily=weathercode,temperature_2m_max,temperature_2m_min"
-        ",windspeed_10m_max,precipitation_sum"
+        ",windspeed_10m_max,precipitation_sum,precipitation_probability_max"
         "&timezone=America%2FEdmonton&forecast_days=7"
     )
     try:
@@ -73,8 +73,9 @@ def get_forecast() -> dict:
                 "description": _WMO_DESC.get(code, "Unknown"),
                 "max_c":       round(daily["temperature_2m_max"][i]),
                 "min_c":       round(daily["temperature_2m_min"][i]),
-                "wind_kmph":   round(daily["windspeed_10m_max"][i]),
-                "precip_mm":   round(daily["precipitation_sum"][i], 1),
+                "wind_kmph":    round(daily["windspeed_10m_max"][i]),
+                "precip_mm":    round(daily["precipitation_sum"][i], 1),
+                "precip_prob":  daily["precipitation_probability_max"][i] or 0,
             })
 
         return {"days": days, "location": "Calgary, AB"}

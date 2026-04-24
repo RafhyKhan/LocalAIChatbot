@@ -12,6 +12,17 @@
 
 import { useEffect, useState } from "react";
 
+// ── Time helpers ──────────────────────────────────────────────────────────────
+
+function formatTime(d: Date): string {
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+}
+
+
 // ── Customise ─────────────────────────────────────────────────────────────────
 
 const GREETING  = "Hi Rafhy Khan!";   // ← change greeting text here
@@ -36,6 +47,13 @@ export default function GreetingWidget() {
   const [quote,   setQuote]   = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
+  const [now,     setNow]     = useState(new Date());
+
+  // Update time every minute — no need for per-second precision on a dashboard
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id); // cleanup on unmount
+  }, []);
 
   useEffect(() => {
     fetch(QUOTE_URL)
@@ -62,10 +80,16 @@ export default function GreetingWidget() {
   return (
     <div className="widget greeting-widget">
 
-      {/* ── Greeting ── */}
-      <div className="greeting-text">
-        {GREETING}
-        {/* ↑ The greeting renders here — change GREETING at the top of the file */}
+      {/* ── Greeting row: name left, date/time right ── */}
+      <div className="greeting-header">
+        <div className="greeting-text" style={{ fontSize: "2rem" }}>
+          {GREETING}
+          {/* ↑ The greeting renders here — change GREETING at the top of the file */}
+        </div>
+        <div className="greeting-datetime">
+          <span className="greeting-time">{formatTime(now)}</span>
+          <span className="greeting-date">{formatDate(now)}</span>
+        </div>
       </div>
 
       {/* ── Quote ── */}
@@ -76,9 +100,9 @@ export default function GreetingWidget() {
       )}
 
       {!loading && !error && quote && (
-        <div className="greeting-quote">
+        <div className ="greeting-quote" style={{ alignItems: "center" }}>
           {/* ── Quote text ── */}
-          <p className="greeting-quote-text">"{quote.text}"</p>
+          <p className="greeting-quote-text" style={{ fontSize: "1rem" }}>{quote.text}</p>
 
           {/* ── Author ── */}
           <p className="greeting-quote-author">— {quote.author}</p>
