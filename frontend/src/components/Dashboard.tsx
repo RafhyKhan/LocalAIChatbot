@@ -34,10 +34,11 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 
-import SortableWidget  from "./SortableWidget";
-import WeatherWidget   from "./widgets/WeatherWidget";
-import NewsWidget      from "./widgets/NewsWidget";
-import BookmarksWidget from "./widgets/BookmarksWidget";
+import SortableWidget   from "./SortableWidget";
+import WeatherWidget    from "./widgets/WeatherWidget";
+import NewsWidget       from "./widgets/NewsWidget";
+import BookmarksWidget  from "./widgets/BookmarksWidget";
+import GreetingWidget   from "./widgets/GreetingWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "weather",   icon: "🌤",  label: "Weather",   description: "7-day Calgary forecast from Open-Meteo", colSpan: 2 },
   { id: "news",      icon: "📰",  label: "BBC News",  description: "Latest headlines from BBC RSS",          colSpan: 1 },
   { id: "bookmarks", icon: "🔖",  label: "Bookmarks", description: "Personal URL bookmarks (localStorage)",  colSpan: 1 },
+  { id: "greeting",  icon: "👋",  label: "Greeting",  description: "Personal greeting + random quote",       colSpan: 2 },
 ];
 
 function renderWidget(id: string) {
@@ -61,6 +63,7 @@ function renderWidget(id: string) {
     case "weather":   return <WeatherWidget />;
     case "news":      return <NewsWidget />;
     case "bookmarks": return <BookmarksWidget />;
+    case "greeting":  return <GreetingWidget />;
     default:          return null;
   }
 }

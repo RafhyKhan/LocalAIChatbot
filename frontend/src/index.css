@@ -618,6 +618,39 @@ a { color: inherit; }
 }
 .bookmark-remove:hover { color: #f87171; background: rgba(248,113,113,.12); }
 
+/* ─── Greeting widget ─────────────────────────────── */
+.greeting-widget { gap: 10px; }
+
+.greeting-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.greeting-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--hover);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+
+.greeting-quote-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.greeting-quote-author {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
 /* ─── Dashboard toolbar & edit mode ──────────────────── */
 .dashboard-toolbar {
   display: flex;
