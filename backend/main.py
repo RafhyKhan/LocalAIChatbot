@@ -45,7 +45,8 @@ client = AsyncOpenAI(
 )
 MODEL = "docker.io/ai/gemma4:E2B"
 
-RECENT_WINDOW = 8
+#The recent window, is its direct memory. Token usage has to fit the RECENTMEMORY number of messages. 
+RECENT_WINDOW = 16
 SEMANTIC_K    = 5
 
 # All tools available to Gemma — combined into one list for the API call
