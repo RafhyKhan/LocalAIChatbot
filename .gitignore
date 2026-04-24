@@ -1,6 +1,8 @@
 backend/conversations/
 backend/venv/
 backend/__pycache__/
+backend/chroma_db/
+backend/chat.db
 frontend/node_modules/
 .claude/
 .vs/
