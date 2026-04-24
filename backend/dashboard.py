@@ -7,6 +7,7 @@ structure so the frontend widget degrades gracefully without crashing.
 """
 
 import json
+import re
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -119,3 +120,50 @@ def get_news() -> dict:
 
     except Exception:
         return {"items": [], "source": "BBC News"}
+
+
+# ── Philosopher of the Month (OUP Blog RSS) ───────────────────────────────────
+
+PHILOSOPHER_RSS = (
+    "https://blog.oup.com/category/arts_and_humanities/philosopher-of-the-month/feed/"
+)
+
+_TAG_RE = re.compile(r"<[^>]+>")   # strips HTML tags from description excerpts
+
+
+def _strip_html(text: str) -> str:
+    return _TAG_RE.sub("", text).strip()
+
+
+def get_philosopher() -> dict:
+    """Return the 3 most recent Philosopher of the Month posts from OUP Blog RSS.
+    Returns an empty items list if the feed is unreachable.
+    """
+    try:
+        req = urllib.request.Request(
+            PHILOSOPHER_RSS, headers={"User-Agent": "RainAI/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            xml_bytes = resp.read()
+
+        root    = ET.fromstring(xml_bytes.decode("utf-8"))
+        channel = root.find("channel")
+        if channel is None:
+            return {"items": []}
+
+        items = []
+        for item in channel.findall("item")[:3]:
+            title   = (item.findtext("title")   or "").strip()
+            link    = (item.findtext("link")    or item.findtext("guid") or "").strip()
+            pub     = (item.findtext("pubDate") or "").strip()
+            desc    = _strip_html(item.findtext("description") or "")
+            # Trim description to a readable excerpt (~200 chars)
+            if len(desc) > 220:
+                desc = desc[:220].rsplit(" ", 1)[0] + "…"
+            if title and link:
+                items.append({"title": title, "link": link, "pub_date": pub, "excerpt": desc})
+
+        return {"items": items}
+
+    except Exception:
+        return {"items": []}

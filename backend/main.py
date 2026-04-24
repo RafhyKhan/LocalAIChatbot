@@ -144,6 +144,12 @@ def get_news_feed():
     return dash_data.get_news()
 
 
+@app.get("/api/philosopher")
+def get_philosopher_feed():
+    """Latest Philosopher of the Month posts from OUP Blog RSS."""
+    return dash_data.get_philosopher()
+
+
 @app.get("/api/conversations/{conv_id}/tokens")
 def get_token_count(conv_id: str):
     """

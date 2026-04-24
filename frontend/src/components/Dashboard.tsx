@@ -40,7 +40,8 @@ import NewsWidget       from "./widgets/NewsWidget";
 import BookmarksWidget  from "./widgets/BookmarksWidget";
 import GreetingWidget    from "./widgets/GreetingWidget";
 import RandomFactWidget  from "./widgets/RandomFactWidget";
-import WordWidget        from "./widgets/WordWidget";
+import WordWidget         from "./widgets/WordWidget";
+import PhilosopherWidget  from "./widgets/PhilosopherWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -59,7 +60,8 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "bookmarks", icon: "🔖",  label: "Bookmarks", description: "Personal URL bookmarks (localStorage)",  colSpan: 1 },
   { id: "greeting",  icon: "👋",  label: "Greeting",  description: "Personal greeting + random quote",       colSpan: 2 },
   { id: "randomfact", icon: "🎲", label: "Random Fact", description: "Dad jokes, facts, poetry & more",        colSpan: 1 },
-  { id: "word",       icon: "📖", label: "Word of the Load", description: "Random word + dictionary definition", colSpan: 1 },
+  { id: "word",        icon: "📖", label: "Word of the Day",       description: "Random word + dictionary definition",        colSpan: 1 },
+  { id: "philosopher", icon: "🏛", label: "Philosopher of the Month", description: "Latest posts from OUP Blog",             colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -69,8 +71,9 @@ function renderWidget(id: string) {
     case "bookmarks": return <BookmarksWidget />;
     case "greeting":   return <GreetingWidget />;
     case "randomfact": return <RandomFactWidget />;
-    case "word":       return <WordWidget />;
-    default:           return null;
+    case "word":        return <WordWidget />;
+    case "philosopher": return <PhilosopherWidget />;
+    default:            return null;
   }
 }
 
