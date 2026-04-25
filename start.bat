@@ -1,5 +1,14 @@
 @echo off
-echo Starting LocalAI...
+
+:: Check if backend (port 8000) is already running — if so, do nothing
+netstat -ano | findstr ":8000 " | findstr "LISTENING" >nul 2>&1
+if %errorlevel% == 0 (
+    echo RainAI is already running.
+    timeout /t 2 /nobreak >nul
+    exit
+)
+
+echo Starting RainAI...
 
 :: Start SearXNG via Docker Compose
 echo [1/3] Starting SearXNG...

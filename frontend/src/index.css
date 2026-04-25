@@ -1266,6 +1266,45 @@ a { color: inherit; }
   color: var(--accent);
 }
 
+/* Bookmark suggestions dropdown */
+.google-suggestions {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--sidebar-border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  background: var(--sidebar);
+}
+.google-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s;
+  min-width: 0;
+}
+.google-suggestion-item:hover { background: var(--hover); }
+.google-suggestion-icon { font-size: 12px; flex-shrink: 0; }
+.google-suggestion-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.google-suggestion-url {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .google-queue {
   display: flex;
   flex-wrap: wrap;

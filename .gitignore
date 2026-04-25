@@ -5,6 +5,7 @@ backend/chroma_db/
 backend/chat.db
 backend/words.json
 frontend/node_modules/
+frontend/src/data/
 .claude/
 .vs/
 RainAI.bat.lnk

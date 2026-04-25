@@ -40,7 +40,7 @@ export default function InputArea({
         <textarea
           ref={ref}
           className="input-ta"
-          placeholder="Message Gemma 4..."
+          placeholder="Message RainAI..."
           value={text}
           rows={1}
           disabled={disabled}

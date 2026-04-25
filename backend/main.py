@@ -254,6 +254,26 @@ def delete_task(label: str):
     return {"ok": True}
 
 
+@app.get("/api/bookmarks")
+def get_bookmarks():
+    """Parse Chrome bookmarks HTML and return [{title, url}] list."""
+    import re
+    bookmarks_file = Path(__file__).parent.parent / "frontend" / "src" / "data" / "bookmarksApril26.html"
+    if not bookmarks_file.exists():
+        return {"bookmarks": []}
+    try:
+        raw = bookmarks_file.read_text(encoding="utf-8", errors="ignore")
+        pattern = re.compile(r'<A\s+HREF="([^"]+)"[^>]*>([^<]+)</A>', re.IGNORECASE)
+        bookmarks = [
+            {"title": m.group(2).strip(), "url": m.group(1).strip()}
+            for m in pattern.finditer(raw)
+            if m.group(1).startswith("http")
+        ]
+        return {"bookmarks": bookmarks}
+    except Exception:
+        return {"bookmarks": []}
+
+
 @app.get("/api/conversations/{conv_id}/tokens")
 def get_token_count(conv_id: str):
     """
