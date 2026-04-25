@@ -25,7 +25,13 @@ function formatDate(d: Date): string {
 
 // ── Customise ─────────────────────────────────────────────────────────────────
 
-const GREETING  = "Hi, Rafhy!";   // ← change greeting text here
+function getGreeting(d: Date): string {
+  const h = d.getHours();
+  if (h >= 5  && h < 12) return "Good Morning, Rafhy!";
+  if (h >= 12 && h < 17) return "Good Afternoon, Rafhy!";
+  if (h >= 17 && h < 21) return "Good Evening, Rafhy!";
+  return "Good Night, Rafhy!";
+}
 
 const QUOTE_URL = "https://react-http-57c1f-default-rtdb.firebaseio.com/quotes.json";
 //                 ↑ swap this URL to point at a different quotes endpoint
@@ -83,8 +89,7 @@ export default function GreetingWidget() {
       {/* ── Greeting row: name left, date/time right ── */}
       <div className="greeting-header">
         <div className="greeting-text" style={{ fontSize: "2rem" }}>
-          {GREETING}
-          {/* ↑ The greeting renders here — change GREETING at the top of the file */}
+          {getGreeting(now)}
         </div>
         <div className="greeting-datetime">
           <span className="greeting-time"  style={{ fontSize: "1.5rem" }} >{formatTime(now)} | {formatDate(now)}</span>

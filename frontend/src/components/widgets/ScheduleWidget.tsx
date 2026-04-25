@@ -44,6 +44,7 @@ const SCHEDULE: SlotDef[] = [
   { startMin: 21*60+30,  endMin: 22*60,     label: "Agenda + Vocabulary",                       category: null       },
   { startMin: 22*60,     endMin: 23*60,     label: "Workout",                                   category: "workout"  },
   { startMin: 23*60,     endMin: 24*60,     label: "Read + Sleep",                                      category: "read"     },
+  { startMin:  0*60,     endMin:  7*60,     label: "Sleeping",                                           category: null       },
 ];
 
 // ── Category metadata ─────────────────────────────────────────────────────────
