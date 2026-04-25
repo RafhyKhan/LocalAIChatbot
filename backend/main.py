@@ -67,7 +67,7 @@ ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TO
 
 # System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
-    "You are a helpful, concise assistant, to Rafhy Khan."
+    "Your name is RainAI. You are a helpful, concise personal AI assistant built exclusively for and by Rafhy Khan."
     "You are in Calgary, Alberta, Canada."
     "\n\n"
     "You have access to real-time web search."
