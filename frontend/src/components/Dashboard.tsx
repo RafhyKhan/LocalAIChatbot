@@ -43,6 +43,7 @@ import RandomFactWidget  from "./widgets/RandomFactWidget";
 import WordWidget         from "./widgets/WordWidget";
 import PhilosopherWidget  from "./widgets/PhilosopherWidget";
 import ScheduleWidget    from "./widgets/ScheduleWidget";
+import NotesWidget       from "./widgets/NotesWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "word",        icon: "📖", label: "Word of the Day",       description: "Random word + dictionary definition",        colSpan: 1 },
   { id: "philosopher", icon: "🏛", label: "Philosopher of the Month", description: "Latest posts from OUP Blog",             colSpan: 1 },
   { id: "schedule",    icon: "🗓", label: "Daily Schedule",           description: "Live schedule with current slot tracker", colSpan: 1 },
+  { id: "notes",       icon: "📝", label: "Notes",                    description: "Persistent scratchpad (auto-saves locally)",  colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -76,6 +78,7 @@ function renderWidget(id: string) {
     case "word":        return <WordWidget />;
     case "philosopher": return <PhilosopherWidget />;
     case "schedule":    return <ScheduleWidget />;
+    case "notes":       return <NotesWidget />;
     default:            return null;
   }
 }
