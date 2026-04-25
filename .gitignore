@@ -8,3 +8,5 @@ frontend/node_modules/
 .claude/
 .vs/
 RainAI.bat.lnk
+backend/credentials.json
+backend/tasks.json

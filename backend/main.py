@@ -115,6 +115,11 @@ class WordItem(BaseModel):
     example:      str = ""
 
 
+class TaskItem(BaseModel):
+    label:    str
+    category: str  # "work" | "activity" | "eat" | "read" | "workout"
+
+
 # ── Word list helpers (words.json) ────────────────────────────────────────────
 
 _WORDS_FILE = Path(__file__).parent / "words.json"
@@ -132,6 +137,26 @@ def _load_words() -> list:
 def _save_words(words: list) -> None:
     _WORDS_FILE.write_text(
         json.dumps(words, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+# ── Task list helpers (tasks.json) ────────────────────────────────────────────
+
+_TASKS_FILE = Path(__file__).parent / "tasks.json"
+
+
+def _load_tasks() -> list:
+    if not _TASKS_FILE.exists():
+        return []
+    try:
+        return json.loads(_TASKS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def _save_tasks(tasks: list) -> None:
+    _TASKS_FILE.write_text(
+        json.dumps(tasks, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
 
@@ -201,6 +226,31 @@ def delete_word(word: str):
     words = _load_words()
     words = [w for w in words if w.get("word") != word]
     _save_words(words)
+    return {"ok": True}
+
+
+@app.get("/api/tasks")
+def get_tasks():
+    """Return the user's personal task pool for schedule assignment."""
+    return {"tasks": _load_tasks()}
+
+
+@app.post("/api/tasks")
+def add_task(item: TaskItem):
+    """Add a task to the pool (no-op if label+category already present)."""
+    tasks = _load_tasks()
+    if not any(t.get("label") == item.label and t.get("category") == item.category for t in tasks):
+        tasks.append(item.model_dump())
+        _save_tasks(tasks)
+    return {"ok": True}
+
+
+@app.delete("/api/tasks/{label}")
+def delete_task(label: str):
+    """Remove all tasks with the given label from the pool."""
+    tasks = _load_tasks()
+    tasks = [t for t in tasks if t.get("label") != label]
+    _save_tasks(tasks)
     return {"ok": True}
 
 

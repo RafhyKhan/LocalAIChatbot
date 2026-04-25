@@ -42,6 +42,7 @@ import GreetingWidget    from "./widgets/GreetingWidget";
 import RandomFactWidget  from "./widgets/RandomFactWidget";
 import WordWidget         from "./widgets/WordWidget";
 import PhilosopherWidget  from "./widgets/PhilosopherWidget";
+import ScheduleWidget    from "./widgets/ScheduleWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "randomfact", icon: "🎲", label: "Random Fact", description: "Dad jokes, facts, poetry & more",        colSpan: 1 },
   { id: "word",        icon: "📖", label: "Word of the Day",       description: "Random word + dictionary definition",        colSpan: 1 },
   { id: "philosopher", icon: "🏛", label: "Philosopher of the Month", description: "Latest posts from OUP Blog",             colSpan: 1 },
+  { id: "schedule",    icon: "🗓", label: "Daily Schedule",           description: "Live schedule with current slot tracker", colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -73,6 +75,7 @@ function renderWidget(id: string) {
     case "randomfact": return <RandomFactWidget />;
     case "word":        return <WordWidget />;
     case "philosopher": return <PhilosopherWidget />;
+    case "schedule":    return <ScheduleWidget />;
     default:            return null;
   }
 }
