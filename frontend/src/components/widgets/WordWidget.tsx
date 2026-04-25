@@ -1,142 +1,305 @@
 /**
- * WordWidget — picks a random word on page load and fetches its full
- * dictionary definition from dictionaryapi.dev (free, no API key).
+ * WordWidget — personal vocabulary card.
  *
- * Never auto-refreshes — only changes on page reload.
+ * Main card: a randomly selected word from your saved list, with full
+ * dictionary definition. Shuffle button picks a different one.
  *
- * ── Customise ────────────────────────────────────────────────────────────────
- *   WORDS  → add/remove words from the pool below
- *            any standard English word that dictionaryapi.dev knows will work
- * ─────────────────────────────────────────────────────────────────────────────
+ * Search bar: look up any word via dictionaryapi.dev (free, no key).
+ * Hit Enter or "Go" → definition appears with a + button to save it.
+ *
+ * My Words: collapsible list of every word you've saved, with × to remove.
+ * All words persisted in backend/words.json via the FastAPI endpoints.
  */
 
-import { useEffect, useState } from "react";
-
-// ── Word pool — edit this list freely ────────────────────────────────────────
-
-/*
-const WORDS = [
-  "ephemeral",    "serendipity",  "eloquent",     "melancholy",   "resilience",
-  "perspicacious","loquacious",   "sanguine",     "plethora",     "ubiquitous",
-  "luminous",     "cacophony",    "ethereal",     "gregarious",   "tenacious",
-  "arduous",      "benevolent",   "capricious",   "diligent",     "ebullient",
-  "fastidious",   "garrulous",    "halcyon",      "inscrutable",  "juxtapose",
-  "kaleidoscope", "laconic",      "magnanimous",  "nefarious",    "oblivious",
-  "paradox",      "quixotic",     "recalcitrant", "stoic",        "truculent",
-  "umbrage",      "venerate",     "whimsical",    "zealous",      "acumen",
-  "blithe",       "candor",       "deft",         "enigmatic",    "fervent",
-  "gilded",       "hapless",      "intrepid",     "jovial",       "keen",
-  "languid",      "mirth",        "nascent",      "opulent",      "pellucid",
-  "querulous",    "ruminate",     "sagacious",    "taciturn",     "uncanny",
-  "vivacious",    "wistful",      "xenial",       "yearning",     "zenith",
-];
-*/
-
-
-const WORDS = [
-  "longing",      "grief",        "tenderness",   "anguish",      "euphoria",
-  "nostalgia",    "dread",        "serenity",     "despair",      "elation",
-  "yearning",     "remorse",      "tranquil",     "forlorn",      "ardor",
-  "melancholy",   "solace",       "wistful",      "desolate",     "rapture",
-  "bittersweet",  "pensive",      "restless",     "content",      "hollow",
-  "fervent",      "somber",       "wretched",     "bliss",        "torment",
-  "apathy",       "reverence",    "sullen",       "giddy",        "numb",
-  "vulnerable",   "overwhelmed",  "detached",     "grateful",     "raw",
-  "brooding",     "catharsis",    "sorrow",       "elusive",      "hopeful",
-  "wounded",      "serene",       "turbulent",    "cherish",      "lament",
-  "resigned",     "flustered",    "adrift",       "awakened",     "haunted",
-  "enchanted",    "shattered",    "fleeting",     "consumed",     "starved",
-  "fractured",    "luminous",     "smoldering",   "unburdened",   "severed",
-];
-
+import { useEffect, useRef, useState } from "react";
+import { BASE } from "../../api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface WordEntry {
-  word:        string;
-  phonetic:    string;
-  partOfSpeech:string;
-  definition:  string;
-  example:     string;
+interface SavedWord {
+  word:         string;
+  phonetic:     string;
+  partOfSpeech: string;
+  definition:   string;
+  example:      string;
+}
+
+// ── Dictionary fetch helper ───────────────────────────────────────────────────
+
+async function fetchDefinition(word: string): Promise<SavedWord | null> {
+  try {
+    const r = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.trim())}`
+    );
+    if (!r.ok) return null;
+    const data  = await r.json();
+    const entry  = data[0];
+    const meaning = entry.meanings?.[0];
+    const defObj  = meaning?.definitions?.[0];
+    const phonetic =
+      entry.phonetic ||
+      entry.phonetics?.find((p: { text?: string }) => p.text)?.text ||
+      "";
+    return {
+      word:         entry.word,
+      phonetic,
+      partOfSpeech: meaning?.partOfSpeech ?? "",
+      definition:   defObj?.definition    ?? "No definition available.",
+      example:      defObj?.example       ?? "",
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WordWidget() {
-  const [entry,   setEntry]   = useState<WordEntry | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(false);
+  const [wordList,       setWordList]       = useState<SavedWord[]>([]);
+  const [displayEntry,   setDisplayEntry]   = useState<SavedWord | null>(null);
+  const [loadingInit,    setLoadingInit]    = useState(true);
+
+  const [searchTerm,     setSearchTerm]     = useState("");
+  const [searchResult,   setSearchResult]   = useState<SavedWord | null>(null);
+  const [searching,      setSearching]      = useState(false);
+  const [searchError,    setSearchError]    = useState(false);
+
+  const [saving,         setSaving]         = useState(false);
+  const [listOpen,       setListOpen]       = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ── Load list + pick a random word on mount ──────────────────────────────
 
   useEffect(() => {
-    // Pick a random word from the pool
-    const word = WORDS[Math.floor(Math.random() * WORDS.length)];
-
-    fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Not found");
-        return r.json();
+    fetch(`${BASE}/api/words`)
+      .then((r) => r.json())
+      .then((d) => {
+        const list: SavedWord[] = d.words ?? [];
+        setWordList(list);
+        if (list.length > 0) {
+          setDisplayEntry(list[Math.floor(Math.random() * list.length)]);
+        }
       })
-      .then((data) => {
-        const entry    = data[0];
-        const meaning  = entry.meanings?.[0];
-        const defObj   = meaning?.definitions?.[0];
+      .catch(() => {/* keep empty list */})
+      .finally(() => setLoadingInit(false));
+  }, []);
 
-        // Phonetic: try top-level first, then search phonetics array
-        const phonetic =
-          entry.phonetic ||
-          entry.phonetics?.find((p: { text?: string }) => p.text)?.text ||
-          "";
+  // ── Shuffle: pick a different word from the list ─────────────────────────
 
-        setEntry({
-          word:         entry.word,
-          phonetic,
-          partOfSpeech: meaning?.partOfSpeech ?? "",
-          definition:   defObj?.definition    ?? "No definition available.",
-          example:      defObj?.example       ?? "",
-        });
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []); // ← runs once on mount, never auto-refreshes
+  function shuffle() {
+    if (wordList.length === 0) return;
+    const others = wordList.filter((w) => w.word !== displayEntry?.word);
+    const pool   = others.length > 0 ? others : wordList;
+    setDisplayEntry(pool[Math.floor(Math.random() * pool.length)]);
+    setSearchResult(null);
+    setSearchTerm("");
+    setSearchError(false);
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────
+
+  async function doSearch() {
+    const term = searchTerm.trim();
+    if (!term) return;
+    setSearching(true);
+    setSearchResult(null);
+    setSearchError(false);
+    const result = await fetchDefinition(term);
+    if (result) {
+      setSearchResult(result);
+    } else {
+      setSearchError(true);
+    }
+    setSearching(false);
+  }
+
+  function clearSearch() {
+    setSearchResult(null);
+    setSearchTerm("");
+    setSearchError(false);
+    inputRef.current?.focus();
+  }
+
+  // ── Save word to backend ──────────────────────────────────────────────────
+
+  async function saveWord(w: SavedWord) {
+    setSaving(true);
+    try {
+      await fetch(`${BASE}/api/words`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(w),
+      });
+      setWordList((prev) => {
+        if (prev.some((p) => p.word === w.word)) return prev;
+        return [...prev, w];
+      });
+      // If list was empty, promote this word to the main card
+      if (wordList.length === 0) setDisplayEntry(w);
+    } finally {
+      setSaving(false);
+      setSearchResult(null);
+      setSearchTerm("");
+    }
+  }
+
+  // ── Remove word from backend ──────────────────────────────────────────────
+
+  async function removeWord(word: string) {
+    await fetch(`${BASE}/api/words/${encodeURIComponent(word)}`, {
+      method: "DELETE",
+    });
+    setWordList((prev) => {
+      const next = prev.filter((w) => w.word !== word);
+      if (displayEntry?.word === word) {
+        setDisplayEntry(
+          next.length > 0
+            ? next[Math.floor(Math.random() * next.length)]
+            : null
+        );
+      }
+      return next;
+    });
+  }
+
+  const alreadySaved = searchResult
+    ? wordList.some((w) => w.word === searchResult.word)
+    : false;
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="widget word-widget">
 
-      {loading && <div className="widget-placeholder">Looking up a word…</div>}
+      {/* Header */}
+      <div className="widget-header">
+        <span className="widget-title">📖 Word of the Day</span>
+        {wordList.length > 1 && (
+          <button className="word-shuffle-btn" onClick={shuffle} title="Shuffle word">
+            🔀
+          </button>
+        )}
+      </div>
 
-      {!loading && error && (
-        <div className="widget-placeholder">Could not load definition.</div>
+      {/* ── Main display card ── */}
+      {loadingInit && (
+        <div className="widget-placeholder">Loading…</div>
       )}
 
-      {!loading && entry && (
-        <>
-          {/* Label */}
-          <div className="fact-label">📖 Word of the Day</div>
+      {!loadingInit && wordList.length === 0 && !searchResult && (
+        <div className="word-empty-state">
+          <p>Your word list is empty.</p>
+          <p>Search for a word below to start building it.</p>
+        </div>
+      )}
 
-          {/* Word + phonetic */}
+      {!loadingInit && displayEntry && !searchResult && (
+        <div className="word-display">
           <div className="word-title">
-            <span className="word-name">{entry.word}</span>
-            {entry.phonetic && (
-              <span className="word-phonetic">{entry.phonetic}</span>
+            <span className="word-name">{displayEntry.word}</span>
+            {displayEntry.phonetic && (
+              <span className="word-phonetic">{displayEntry.phonetic}</span>
             )}
           </div>
-
-          {/* Part of speech */}
-          {entry.partOfSpeech && (
-            <div className="word-pos">{entry.partOfSpeech}</div>
+          {displayEntry.partOfSpeech && (
+            <div className="word-pos">{displayEntry.partOfSpeech}</div>
           )}
-
-          {/* Definition */}
-          <p className="word-definition">{entry.definition}</p>
-
-          {/* Example sentence */}
-          {entry.example && (
-            <p className="word-example">"{entry.example}"</p>
+          <p className="word-definition">{displayEntry.definition}</p>
+          {displayEntry.example && (
+            <p className="word-example">"{displayEntry.example}"</p>
           )}
-
-          <span className="fact-source">via dictionaryapi.dev</span>
-        </>
+        </div>
       )}
+
+      {/* ── Search result (overlays main card) ── */}
+      {searchResult && (
+        <div className="word-search-result">
+          <div className="word-title">
+            <span className="word-name">{searchResult.word}</span>
+            {searchResult.phonetic && (
+              <span className="word-phonetic">{searchResult.phonetic}</span>
+            )}
+            <button
+              className={`word-save-btn${alreadySaved ? " word-save-btn-saved" : ""}`}
+              onClick={() => !alreadySaved && saveWord(searchResult)}
+              disabled={saving || alreadySaved}
+              title={alreadySaved ? "Already saved" : "Save to My Words"}
+            >
+              {alreadySaved ? "✓" : saving ? "…" : "+"}
+            </button>
+          </div>
+          {searchResult.partOfSpeech && (
+            <div className="word-pos">{searchResult.partOfSpeech}</div>
+          )}
+          <p className="word-definition">{searchResult.definition}</p>
+          {searchResult.example && (
+            <p className="word-example">"{searchResult.example}"</p>
+          )}
+          <button className="word-back-btn" onClick={clearSearch}>
+            ← Back to my word
+          </button>
+        </div>
+      )}
+
+      {/* ── Search bar ── */}
+      <div className="word-search-bar">
+        <input
+          ref={inputRef}
+          className="word-search-input"
+          placeholder="Search a word…"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setSearchError(false);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && doSearch()}
+        />
+        <button
+          className="word-search-go"
+          onClick={doSearch}
+          disabled={searching || !searchTerm.trim()}
+        >
+          {searching ? "…" : "Go"}
+        </button>
+      </div>
+      {searchError && (
+        <p className="word-search-error">Word not found. Try another.</p>
+      )}
+
+      {/* ── My Words collapsible list ── */}
+      <div className="word-list-section">
+        <button
+          className="word-list-toggle"
+          onClick={() => setListOpen((v) => !v)}
+        >
+          My Words ({wordList.length}) {listOpen ? "▲" : "▾"}
+        </button>
+
+        {listOpen && (
+          <div className="word-list">
+            {wordList.length === 0 && (
+              <p className="word-list-empty">No words saved yet.</p>
+            )}
+            {wordList.map((w) => (
+              <div key={w.word} className="word-list-item">
+                <div className="word-list-info">
+                  <span className="word-list-word">{w.word}</span>
+                  <span className="word-list-def">{w.definition}</span>
+                </div>
+                <button
+                  className="word-list-remove"
+                  onClick={() => removeWord(w.word)}
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

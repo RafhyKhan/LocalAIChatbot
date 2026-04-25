@@ -18,6 +18,7 @@ import asyncio
 import json
 import re
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -106,6 +107,34 @@ class ChatRequest(BaseModel):
     message: str
 
 
+class WordItem(BaseModel):
+    word:         str
+    phonetic:     str = ""
+    partOfSpeech: str = ""
+    definition:   str = ""
+    example:      str = ""
+
+
+# ── Word list helpers (words.json) ────────────────────────────────────────────
+
+_WORDS_FILE = Path(__file__).parent / "words.json"
+
+
+def _load_words() -> list:
+    if not _WORDS_FILE.exists():
+        return []
+    try:
+        return json.loads(_WORDS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def _save_words(words: list) -> None:
+    _WORDS_FILE.write_text(
+        json.dumps(words, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
 # ── REST endpoints ────────────────────────────────────────────────
 
 @app.get("/api/conversations")
@@ -148,6 +177,31 @@ def get_news_feed():
 def get_philosopher_feed():
     """Latest Philosopher of the Month posts from OUP Blog RSS."""
     return dash_data.get_philosopher()
+
+
+@app.get("/api/words")
+def get_word_list():
+    """Return the user's personal saved word list."""
+    return {"words": _load_words()}
+
+
+@app.post("/api/words")
+def add_word(item: WordItem):
+    """Add a word to the saved list (no-op if already present)."""
+    words = _load_words()
+    if not any(w.get("word") == item.word for w in words):
+        words.append(item.model_dump())
+        _save_words(words)
+    return {"ok": True}
+
+
+@app.delete("/api/words/{word}")
+def delete_word(word: str):
+    """Remove a word from the saved list."""
+    words = _load_words()
+    words = [w for w in words if w.get("word") != word]
+    _save_words(words)
+    return {"ok": True}
 
 
 @app.get("/api/conversations/{conv_id}/tokens")

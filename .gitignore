@@ -3,6 +3,7 @@ backend/venv/
 backend/__pycache__/
 backend/chroma_db/
 backend/chat.db
+backend/words.json
 frontend/node_modules/
 .claude/
 .vs/
