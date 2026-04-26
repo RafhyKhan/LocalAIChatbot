@@ -122,6 +122,56 @@ def get_news() -> dict:
         return {"items": [], "source": "BBC News"}
 
 
+# ── Multi-source news ─────────────────────────────────────────────────────────
+
+_NEWS_SOURCES = {
+    "bbc":       "https://feeds.bbci.co.uk/news/rss.xml",
+    "reuters":   "https://news.google.com/rss/search?q=site:reuters.com&hl=en-CA&gl=CA&ceid=CA:en",
+    "ap":        "https://news.google.com/rss/search?q=site:apnews.com&hl=en-CA&gl=CA&ceid=CA:en",
+    "aljazeera": "https://www.aljazeera.com/xml/rss/all.xml",
+    "cbc":       "https://www.cbc.ca/cmlink/rss-topstories",
+    "ctv":       "https://news.google.com/rss/search?q=site:ctvnews.ca&hl=en-CA&gl=CA&ceid=CA:en",
+    "calgary":   "https://calgaryherald.com/feed/",
+}
+
+_NS = {"media": "http://search.yahoo.com/mrss/", "dc": "http://purl.org/dc/elements/1.1/"}
+
+
+def get_multi_news(source: str) -> dict:
+    """Fetch RSS headlines for a given source key. Returns [] on failure."""
+    url = _NEWS_SOURCES.get(source)
+    if not url:
+        return {"items": [], "source": source}
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "RainAI/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            xml_bytes = resp.read()
+
+        # Try UTF-8 first, fall back to latin-1
+        try:
+            text = xml_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            text = xml_bytes.decode("latin-1")
+
+        root    = ET.fromstring(text)
+        channel = root.find("channel")
+        if channel is None:
+            return {"items": [], "source": source}
+
+        items = []
+        for item in channel.findall("item")[:10]:
+            title = (item.findtext("title") or "").strip()
+            link  = (item.findtext("link")  or item.findtext("guid") or "").strip()
+            pub   = (item.findtext("pubDate") or "").strip()
+            if title and link:
+                items.append({"title": title, "link": link, "pub_date": pub})
+
+        return {"items": items, "source": source}
+
+    except Exception:
+        return {"items": [], "source": source}
+
+
 # ── Philosopher of the Month (OUP Blog RSS) ───────────────────────────────────
 
 PHILOSOPHER_RSS = (

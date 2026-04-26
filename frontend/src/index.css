@@ -1204,6 +1204,90 @@ a { color: inherit; }
   pointer-events: none;
 }
 
+/* ─── Multi News widget ──────────────────────────── */
+.mnews-widget { gap: 0; }
+
+.mnews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  max-height: 400px;
+}
+.mnews-list::-webkit-scrollbar { width: 3px; }
+.mnews-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+.mnews-source { display: flex; flex-direction: column; }
+
+.mnews-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s;
+  width: 100%;
+}
+.mnews-source-row:hover { background: var(--hover); }
+.mnews-source-open {
+  background: rgba(25, 195, 125, 0.08);
+  border-radius: 7px 7px 0 0;
+}
+
+.mnews-source-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.mnews-source-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mnews-source-link {
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color .12s, background .12s;
+}
+.mnews-source-link:hover { color: var(--accent); background: rgba(25,195,125,0.1); }
+.mnews-source-chevron {
+  font-size: 14px;
+  color: var(--muted);
+}
+.mnews-source-open .mnews-source-chevron { color: var(--accent); }
+
+.mnews-headlines {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0 8px 10px;
+  border-left: 2px solid rgba(25, 195, 125, 0.2);
+  margin-left: 10px;
+  margin-bottom: 4px;
+}
+
+.mnews-item {
+  font-size: 12px;
+  color: var(--text);
+  text-decoration: none;
+  padding: 5px 8px;
+  border-radius: 5px;
+  line-height: 1.4;
+  transition: background .12s;
+  display: block;
+}
+.mnews-item:hover { background: var(--hover); color: var(--accent); }
+
+.mnews-loading { font-size: 12px; color: var(--muted); padding: 6px 8px; }
+.mnews-error   { font-size: 12px; color: var(--dim);   padding: 6px 8px; }
+
 /* ─── Google Search widget ───────────────────────── */
 .google-search-widget {
   padding: 10px 14px;

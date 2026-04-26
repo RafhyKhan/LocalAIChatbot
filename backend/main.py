@@ -198,6 +198,12 @@ def get_news_feed():
     return dash_data.get_news()
 
 
+@app.get("/api/multinews/{source}")
+def get_multi_news(source: str):
+    """Fetch RSS headlines for a given news source key."""
+    return dash_data.get_multi_news(source)
+
+
 @app.get("/api/philosopher")
 def get_philosopher_feed():
     """Latest Philosopher of the Month posts from OUP Blog RSS."""

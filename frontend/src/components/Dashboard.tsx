@@ -45,6 +45,7 @@ import PhilosopherWidget  from "./widgets/PhilosopherWidget";
 import ScheduleWidget    from "./widgets/ScheduleWidget";
 import NotesWidget         from "./widgets/NotesWidget";
 import GoogleSearchWidget  from "./widgets/GoogleSearchWidget";
+import MultiNewsWidget     from "./widgets/MultiNewsWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "schedule",    icon: "🗓", label: "Daily Schedule",           description: "Live schedule with current slot tracker", colSpan: 1 },
   { id: "notes",        icon: "📝", label: "Notes",         description: "Persistent scratchpad (auto-saves locally)",  colSpan: 1 },
   { id: "googlesearch", icon: "🔍", label: "Google Search", description: "Quick Google search bar",                      colSpan: 2 },
+  { id: "multinews",   icon: "🌍", label: "World News",    description: "BBC, Reuters, AP, Al Jazeera, CBC, CTV, Calgary Herald", colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -82,6 +84,7 @@ function renderWidget(id: string) {
     case "schedule":    return <ScheduleWidget />;
     case "notes":        return <NotesWidget />;
     case "googlesearch": return <GoogleSearchWidget />;
+    case "multinews":    return <MultiNewsWidget />;
     default:             return null;
   }
 }
