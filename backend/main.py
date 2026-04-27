@@ -22,7 +22,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 
@@ -36,6 +36,7 @@ import unittool
 import browsertool
 import weathertool
 import dashboard as dash_data
+import google_calendar as gcal
 
 app = FastAPI()
 
@@ -118,6 +119,18 @@ class WordItem(BaseModel):
 class TaskItem(BaseModel):
     label:    str
     category: str  # "work" | "activity" | "eat" | "read" | "workout"
+
+
+class CalendarEventItem(BaseModel):
+    title: str
+    date:  str          # "YYYY-MM-DD"
+    start: str = ""     # "HH:MM" or empty for all-day
+    end:   str = ""     # "HH:MM" or empty for all-day
+
+
+class AgendaItem(BaseModel):
+    date: str   # "YYYY-MM-DD"
+    text: str
 
 
 # ── Word list helpers (words.json) ────────────────────────────────────────────
@@ -278,6 +291,73 @@ def get_bookmarks():
         return {"bookmarks": bookmarks}
     except Exception:
         return {"bookmarks": []}
+
+
+@app.get("/api/calendar/auth")
+def calendar_auth_status():
+    """Return { connected, auth_url? } — widget polls this every 3s until connected."""
+    connected = gcal.is_connected()
+    if connected:
+        return {"connected": True}
+    return {"connected": False, "auth_url": gcal.get_auth_url()}
+
+
+@app.get("/api/calendar/callback")
+def calendar_callback(code: str, state: str = ""):
+    """
+    OAuth redirect target. Exchanges code for tokens, then returns a
+    self-closing HTML page so the popup tab disappears automatically.
+    """
+    try:
+        gcal.exchange_code(code)
+        html = """<!doctype html>
+<html><head><title>Connected</title></head>
+<body style="font-family:sans-serif;background:#212121;color:#ececec;
+             display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">✅</div>
+    <p style="font-size:18px;font-weight:600">Google Calendar connected!</p>
+    <p style="color:#8e8ea0;margin-top:6px">You can close this tab.</p>
+  </div>
+  <script>setTimeout(()=>window.close(),1500);</script>
+</body></html>"""
+    except Exception as exc:
+        html = f"""<!doctype html>
+<html><head><title>Error</title></head>
+<body style="font-family:sans-serif;background:#212121;color:#ececec;
+             display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">❌</div>
+    <p style="font-size:18px;font-weight:600">Connection failed</p>
+    <p style="color:#8e8ea0;margin-top:6px">{exc}</p>
+    <p style="color:#8e8ea0;margin-top:6px">Close this tab and try again.</p>
+  </div>
+</body></html>"""
+    return HTMLResponse(content=html)
+
+
+@app.get("/api/calendar/events")
+def get_calendar_events(start_date: str = None, days_ahead: int = 7):
+    """Return { days: [...] } for any 7-day window. Defaults to today."""
+    if not gcal.is_connected():
+        raise HTTPException(status_code=401, detail="Not connected to Google Calendar.")
+    return {"days": gcal.get_events(days_ahead=days_ahead, start_date=start_date)}
+
+
+@app.post("/api/calendar/events")
+def create_calendar_event(item: CalendarEventItem):
+    """Create a Google Calendar event."""
+    if not gcal.is_connected():
+        raise HTTPException(status_code=401, detail="Not connected to Google Calendar.")
+    return gcal.create_event(item.title, item.date, item.start, item.end)
+
+
+@app.post("/api/calendar/agenda")
+def save_calendar_agenda(item: AgendaItem):
+    """Save agenda text to the '📋 Agenda' all-day event for a given date."""
+    if not gcal.is_connected():
+        raise HTTPException(status_code=401, detail="Not connected to Google Calendar.")
+    return gcal.save_agenda(item.date, item.text)
 
 
 @app.get("/api/conversations/{conv_id}/tokens")
