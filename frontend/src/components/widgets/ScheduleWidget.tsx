@@ -124,7 +124,7 @@ export default function ScheduleWidget() {
 
   // Scroll active slot into view when it changes
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    activeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [now]);
 
   // Focus input when manage popup opens

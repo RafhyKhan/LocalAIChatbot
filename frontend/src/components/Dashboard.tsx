@@ -16,7 +16,7 @@
  *   2. Add a case to renderWidget().
  *   Nothing else changes.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -38,7 +38,7 @@ import SortableWidget   from "./SortableWidget";
 import WeatherWidget    from "./widgets/WeatherWidget";
 import NewsWidget       from "./widgets/NewsWidget";
 import BookmarksWidget  from "./widgets/BookmarksWidget";
-import GreetingWidget    from "./widgets/GreetingWidget";
+import QuoteWidget       from "./widgets/QuoteWidget";
 import RandomFactWidget  from "./widgets/RandomFactWidget";
 import WordWidget         from "./widgets/WordWidget";
 import PhilosopherWidget  from "./widgets/PhilosopherWidget";
@@ -63,7 +63,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "weather",   icon: "🌤",  label: "Weather",   description: "7-day Calgary forecast from Open-Meteo", colSpan: 2 },
   { id: "news",      icon: "📰",  label: "BBC News",  description: "Latest headlines from BBC RSS",          colSpan: 1 },
   { id: "bookmarks", icon: "🔖",  label: "Bookmarks", description: "Personal URL bookmarks (localStorage)",  colSpan: 1 },
-  { id: "greeting",  icon: "👋",  label: "Greeting",  description: "Personal greeting + random quote",       colSpan: 2 },
+  { id: "quote",      icon: "💬",  label: "Quote",     description: "Random quote of the day",               colSpan: 1 },
   { id: "randomfact", icon: "🎲", label: "Random Fact", description: "Dad jokes, facts, poetry & more",        colSpan: 1 },
   { id: "word",        icon: "📖", label: "Word of the Day",       description: "Random word + dictionary definition",        colSpan: 1 },
   { id: "philosopher", icon: "🏛", label: "Philosopher of the Month", description: "Latest posts from OUP Blog",             colSpan: 1 },
@@ -79,7 +79,7 @@ function renderWidget(id: string) {
     case "weather":   return <WeatherWidget />;
     case "news":      return <NewsWidget />;
     case "bookmarks": return <BookmarksWidget />;
-    case "greeting":   return <GreetingWidget />;
+    case "quote":       return <QuoteWidget />;
     case "randomfact": return <RandomFactWidget />;
     case "word":        return <WordWidget />;
     case "philosopher": return <PhilosopherWidget />;
@@ -102,10 +102,31 @@ function loadOrder(): string[] {
     const raw = localStorage.getItem(ORDER_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Migrate: old "greeting" (colSpan 2) → new "quote" (colSpan 1)
+        return parsed.map((id: string) => id === "greeting" ? "quote" : id);
+      }
     }
   } catch { /* ignore */ }
   return [...DEFAULT_ORDER];
+}
+
+// ── Toolbar greeting helpers ──────────────────────────────────────────────────
+
+function getGreeting(d: Date): string {
+  const h = d.getHours();
+  if (h >= 5  && h < 12) return "Good Morning, Rafhy!";
+  if (h >= 12 && h < 17) return "Good Afternoon, Rafhy!";
+  if (h >= 17 && h < 21) return "Good Evening, Rafhy!";
+  return "Good Night, Rafhy!";
+}
+
+function formatToolbarTime(d: Date): string {
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatToolbarDate(d: Date): string {
+  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
 function persistOrder(order: string[]) {
@@ -119,6 +140,12 @@ export default function Dashboard() {
   const [editMode,      setEditMode]      = useState(false);
   const [dirOpen,       setDirOpen]       = useState(false);
   const [activeId,      setActiveId]      = useState<string | null>(null);
+  const [now,           setNow]           = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Widgets not yet on the dashboard
   const available = WIDGET_REGISTRY.filter((w) => !order.includes(w.id));
@@ -176,34 +203,43 @@ export default function Dashboard() {
 
       {/* ── Toolbar ── */}
       <div className="dashboard-toolbar">
-        {/* Widget directory button */}
-        <button
-          className={`dir-btn${dirOpen ? " dir-btn-active" : ""}`}
-          onClick={() => setDirOpen((v) => !v)}
-          title="Widget directory"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-          </svg>
-          Widgets
-        </button>
 
-        {/* Edit-layout button */}
-        <button
-          className={`edit-toggle${editMode ? " edit-toggle-active" : ""}`}
-          onClick={toggleEdit}
-          title={editMode ? "Done editing" : "Edit layout"}
-        >
-          {editMode ? (
-            <span className="edit-done-label">Done</span>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        {/* Greeting + clock — left side */}
+        <div className="toolbar-greeting">
+          <span className="toolbar-greeting-text">{getGreeting(now)}</span>
+          <span className="toolbar-greeting-sep">·</span>
+          <span className="toolbar-datetime">{formatToolbarDate(now)} · {formatToolbarTime(now)}</span>
+        </div>
+
+        {/* Buttons — right side */}
+        <div className="toolbar-actions">
+          <button
+            className={`dir-btn${dirOpen ? " dir-btn-active" : ""}`}
+            onClick={() => setDirOpen((v) => !v)}
+            title="Widget directory"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
             </svg>
-          )}
-        </button>
+            Widgets
+          </button>
+
+          <button
+            className={`edit-toggle${editMode ? " edit-toggle-active" : ""}`}
+            onClick={toggleEdit}
+            title={editMode ? "Done editing" : "Edit layout"}
+          >
+            {editMode ? (
+              <span className="edit-done-label">Done</span>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Widget directory panel ── */}
