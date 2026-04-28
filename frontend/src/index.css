@@ -1616,9 +1616,6 @@ a { color: inherit; }
   cursor: pointer;
   transition: background .12s;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
 }
 .schedule-assigned-tag:hover { background: rgba(25, 195, 125, 0.22); }
 .schedule-clear-btn {
