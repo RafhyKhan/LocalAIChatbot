@@ -51,9 +51,13 @@ function localDateStr(d: Date): string {
 
 function getWeekDates(offset: number): string[] {
   const today = new Date();
+  // Anchor to this week's Sunday (JS getDay(): 0=Sun, so subtract dayOfWeek)
+  const dayOfWeek = today.getDay(); // 0 Sun … 6 Sat
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - dayOfWeek);
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + offset * 7 + i);
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + offset * 7 + i);
     return localDateStr(d);
   });
 }
