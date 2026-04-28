@@ -4,6 +4,7 @@ backend/__pycache__/
 backend/chroma_db/
 backend/chat.db
 backend/words.json
+backend/google_token.json
 frontend/node_modules/
 frontend/src/data/
 .claude/
@@ -11,3 +12,4 @@ frontend/src/data/
 RainAI.bat.lnk
 backend/credentials.json
 backend/tasks.json
+backend/google_token.json

@@ -204,15 +204,15 @@ export default function Dashboard() {
       {/* ── Toolbar ── */}
       <div className="dashboard-toolbar">
 
-        {/* Greeting + clock — left side */}
+        {/* Greeting — left side */}
         <div className="toolbar-greeting">
           <span className="toolbar-greeting-text">{getGreeting(now)}</span>
-          <span className="toolbar-greeting-sep">·</span>
-          <span className="toolbar-datetime">{formatToolbarDate(now)} · {formatToolbarTime(now)}</span>
         </div>
 
-        {/* Buttons — right side */}
+        {/* Datetime + Buttons — right side */}
         <div className="toolbar-actions">
+          <span className="toolbar-datetime">{formatToolbarDate(now)} · {formatToolbarTime(now)}</span>
+          <div className="toolbar-sep" />
           <button
             className={`dir-btn${dirOpen ? " dir-btn-active" : ""}`}
             onClick={() => setDirOpen((v) => !v)}
