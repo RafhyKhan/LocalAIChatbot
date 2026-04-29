@@ -1511,32 +1511,17 @@ a { color: inherit; }
   line-height: 1;
 }
 
-/* Green progress bar — current round */
-.checkbox-progress-bar {
-  height: 4px;
-  background: var(--hover);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.checkbox-progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.25s ease;
-}
-.checkbox-progress-label {
-  font-size: 10px;
-  color: var(--muted);
-  text-align: right;
-  margin-top: -3px;
-}
-
-/* Task grid — 2 columns */
+/* Task grid — 2 columns, fixed height, scrollable */
 .checkbox-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
+.checkbox-list::-webkit-scrollbar { width: 3px; }
+.checkbox-list::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
 .checkbox-item {
   display: flex;
   align-items: center;
@@ -1597,6 +1582,22 @@ a { color: inherit; }
   cursor: default;
 }
 
+/* Delete task button */
+.checkbox-delete-btn {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: color 0.12s, opacity 0.12s;
+  cursor: pointer;
+}
+.checkbox-item:hover .checkbox-delete-btn { opacity: 1; }
+.checkbox-delete-btn:hover { color: #e06c75; }
+
 /* Inline rename input */
 .checkbox-edit-input {
   flex: 1;
@@ -1610,13 +1611,25 @@ a { color: inherit; }
   outline: none;
 }
 
-/* Submit */
+/* Footer — + 10 button left, Submit right */
 .checkbox-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding-top: 4px;
   border-top: 1px solid var(--border);
 }
+.checkbox-add-btn {
+  background: none;
+  border: 1px dashed var(--dim);
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.checkbox-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 .checkbox-submit {
   background: var(--hover);
   border: 1px solid var(--border);

@@ -1,44 +1,56 @@
 /**
  * CheckboxWidget — gamified task tracker.
  *
- * 10 renameable tasks. Rename a task to unlock its checkbox.
- * Check all 10 → Submit → lifetime checks +10, labels + boxes reset.
+ * Tasks start at 10, expandable by +10 pages via the + button.
+ * Rename a task label to unlock its checkbox.
+ * Submit requires ≥ 5 checked. Only checked boxes reset on submit;
+ * unchecked boxes keep their names and state.
  *
- * Green bar : current round progress (0–10).
- * Gold bar  : progress toward next 100 lifetime checks (lifetime % 100).
- * Finishes  : how many times lifetime checks has crossed a multiple of 100.
+ * Gold bar: lifetime % 100 → fills toward next 100 milestone.
+ * Finishes: how many times lifetime has crossed a multiple of 100.
  *
  * All state persisted to localStorage.
  */
 import { useRef, useState } from "react";
 
-const TOTAL = 10;
-const DEFAULT_LABELS = Array.from({ length: TOTAL }, (_, i) => `Task ${i + 1}`);
+const PAGE_SIZE    = 10;
+const MIN_SUBMIT   = 5;
 
-const LABELS_KEY   = "rainai_checkbox_labels";
-const CHECKED_KEY  = "rainai_checkbox_checked";
-const LIFETIME_KEY = "rainai_checkbox_lifetime";
+const LABELS_KEY     = "rainai_checkbox_labels";
+const CHECKED_KEY    = "rainai_checkbox_checked";
+const LIFETIME_KEY   = "rainai_checkbox_lifetime";
+const TASKCOUNT_KEY  = "rainai_checkbox_taskcount";
 
-function loadLabels(): string[] {
+function defaultLabel(i: number) { return `Task ${i + 1}`; }
+
+function loadTaskCount(): number {
+  try {
+    const raw = localStorage.getItem(TASKCOUNT_KEY);
+    if (raw !== null) return Math.max(PAGE_SIZE, parseInt(raw, 10) || PAGE_SIZE);
+  } catch { /* ignore */ }
+  return PAGE_SIZE;
+}
+
+function loadLabels(count: number): string[] {
   try {
     const raw = localStorage.getItem(LABELS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length === TOTAL) return parsed;
+      if (Array.isArray(parsed) && parsed.length === count) return parsed;
     }
   } catch { /* ignore */ }
-  return [...DEFAULT_LABELS];
+  return Array.from({ length: count }, (_, i) => defaultLabel(i));
 }
 
-function loadChecked(): boolean[] {
+function loadChecked(count: number): boolean[] {
   try {
     const raw = localStorage.getItem(CHECKED_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length === TOTAL) return parsed;
+      if (Array.isArray(parsed) && parsed.length === count) return parsed;
     }
   } catch { /* ignore */ }
-  return Array(TOTAL).fill(false);
+  return Array(count).fill(false);
 }
 
 function loadLifetime(): number {
@@ -50,22 +62,44 @@ function loadLifetime(): number {
 }
 
 export default function CheckboxWidget() {
-  const [labels,       setLabels]       = useState<string[]>(loadLabels);
-  const [checked,      setChecked]      = useState<boolean[]>(loadChecked);
+  const initCount = loadTaskCount();
+  const [taskCount,    setTaskCount]    = useState(initCount);
+  const [labels,       setLabels]       = useState(() => loadLabels(initCount));
+  const [checked,      setChecked]      = useState(() => loadChecked(initCount));
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue,    setEditValue]    = useState("");
   const [lifetime,     setLifetime]     = useState(loadLifetime);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
 
   // Derived
   const checkedCount = checked.filter(Boolean).length;
-  const allChecked   = checkedCount === TOTAL;
+  const canSubmit    = checkedCount >= MIN_SUBMIT;
   const goldProgress = lifetime % 100;
   const finishes     = Math.floor(lifetime / 100);
 
   function isRenamed(i: number) {
-    return labels[i].trim() !== "" && labels[i] !== DEFAULT_LABELS[i];
+    return labels[i].trim() !== "" && labels[i] !== defaultLabel(i);
+  }
+
+  // ── Remove task ───────────────────────────────────────────────────────────
+
+  function removeTask(i: number) {
+    const newLabels  = labels
+      .filter((_, idx) => idx !== i)
+      .map((label, newIdx) => {
+        const oldIdx = newIdx >= i ? newIdx + 1 : newIdx;
+        return label === defaultLabel(oldIdx) ? defaultLabel(newIdx) : label;
+      });
+    const newChecked = checked.filter((_, idx) => idx !== i);
+    const newCount   = taskCount - 1;
+    setLabels(newLabels);
+    setChecked(newChecked);
+    setTaskCount(newCount);
+    localStorage.setItem(LABELS_KEY,    JSON.stringify(newLabels));
+    localStorage.setItem(CHECKED_KEY,   JSON.stringify(newChecked));
+    localStorage.setItem(TASKCOUNT_KEY, String(newCount));
+    if (editingIndex === i) setEditingIndex(null);
   }
 
   // ── Toggle ────────────────────────────────────────────────────────────────
@@ -82,17 +116,16 @@ export default function CheckboxWidget() {
   function startEdit(i: number) {
     if (editingIndex !== null && editingIndex !== i) commitEdit(editingIndex);
     setEditingIndex(i);
-    setEditValue(labels[i] === DEFAULT_LABELS[i] ? "" : labels[i]);
+    setEditValue(labels[i] === defaultLabel(i) ? "" : labels[i]);
     setTimeout(() => inputRef.current?.focus(), 20);
   }
 
   function commitEdit(i: number) {
     const val  = editValue.trim();
     const next = [...labels];
-    next[i]    = val || DEFAULT_LABELS[i];
+    next[i]    = val || defaultLabel(i);
     setLabels(next);
     localStorage.setItem(LABELS_KEY, JSON.stringify(next));
-    // If reverted to default, uncheck that box
     if (!val) {
       const nextChecked = [...checked];
       nextChecked[i] = false;
@@ -102,18 +135,34 @@ export default function CheckboxWidget() {
     setEditingIndex(null);
   }
 
+  // ── Add page ──────────────────────────────────────────────────────────────
+
+  function addPage() {
+    const newCount   = taskCount + PAGE_SIZE;
+    const newLabels  = [...labels,  ...Array.from({ length: PAGE_SIZE }, (_, i) => defaultLabel(taskCount + i))];
+    const newChecked = [...checked, ...Array(PAGE_SIZE).fill(false)];
+    setTaskCount(newCount);
+    setLabels(newLabels);
+    setChecked(newChecked);
+    localStorage.setItem(TASKCOUNT_KEY, String(newCount));
+    localStorage.setItem(LABELS_KEY,    JSON.stringify(newLabels));
+    localStorage.setItem(CHECKED_KEY,   JSON.stringify(newChecked));
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
 
   function handleSubmit() {
-    if (!allChecked) return;
-    const nextLifetime = lifetime + TOTAL;
+    if (!canSubmit) return;
+    const nextLifetime = lifetime + checkedCount;
     setLifetime(nextLifetime);
     localStorage.setItem(LIFETIME_KEY, String(nextLifetime));
-    const reset = Array(TOTAL).fill(false);
-    setChecked(reset);
-    localStorage.setItem(CHECKED_KEY, JSON.stringify(reset));
-    setLabels([...DEFAULT_LABELS]);
-    localStorage.setItem(LABELS_KEY, JSON.stringify(DEFAULT_LABELS));
+    // Only reset checked boxes — unchecked keep their names
+    const newLabels  = labels.map((label, i) => checked[i] ? defaultLabel(i) : label);
+    const newChecked = Array(taskCount).fill(false);
+    setLabels(newLabels);
+    setChecked(newChecked);
+    localStorage.setItem(LABELS_KEY,  JSON.stringify(newLabels));
+    localStorage.setItem(CHECKED_KEY, JSON.stringify(newChecked));
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -130,15 +179,22 @@ export default function CheckboxWidget() {
         </div>
       </div>
 
-      {/* Green progress bar — current round */}
-      <div className="checkbox-progress-bar">
-        <div className="checkbox-progress-fill" style={{ width: `${(checkedCount / TOTAL) * 100}%` }} />
+      {/* Gold bar — lifetime milestones */}
+      <div className="checkbox-gold-section">
+        <div className="checkbox-gold-bar">
+          <div className="checkbox-gold-fill" style={{ width: `${goldProgress}%` }} />
+        </div>
+        <div className="checkbox-gold-row">
+          <span className="checkbox-gold-label">{goldProgress} / 100</span>
+          <span className="checkbox-finishes">
+            🏆 <span className="checkbox-finishes-num">{finishes}</span>
+          </span>
+        </div>
       </div>
-      <div className="checkbox-progress-label">{checkedCount} / {TOTAL}</div>
 
-      {/* Task grid */}
+      {/* Scrollable task grid — rendered top-to-bottom newest first */}
       <div className="checkbox-list">
-        {labels.map((label, i) => {
+        {labels.map((label, i) => ({ label, i })).reverse().map(({ label, i }) => {
           const renamed   = isRenamed(i);
           const isChecked = checked[i];
           const isEditing = editingIndex === i;
@@ -149,10 +205,8 @@ export default function CheckboxWidget() {
               className={[
                 "checkbox-item",
                 isChecked ? "checkbox-item-checked" : "",
-                !renamed  ? "checkbox-item-locked"  : "",
               ].filter(Boolean).join(" ")}
             >
-              {/* Checkbox button */}
               <button
                 className="checkbox-box"
                 onClick={() => toggle(i)}
@@ -168,7 +222,6 @@ export default function CheckboxWidget() {
                 )}
               </button>
 
-              {/* Label / inline editor */}
               {isEditing ? (
                 <input
                   ref={inputRef}
@@ -191,34 +244,32 @@ export default function CheckboxWidget() {
                   {label}
                 </span>
               )}
+
+              <button
+                className="checkbox-delete-btn"
+                onClick={() => removeTask(i)}
+                title="Remove task"
+              >
+                ×
+              </button>
             </div>
           );
         })}
       </div>
 
-      {/* Submit */}
+      {/* Add page + Submit row */}
       <div className="checkbox-footer">
-        <button
-          className={`checkbox-submit${allChecked ? " checkbox-submit-ready" : ""}`}
-          onClick={handleSubmit}
-          disabled={!allChecked}
-          title={allChecked ? "Submit and reset" : `Complete all ${TOTAL} tasks first`}
-        >
-          Submit
+        <button className="checkbox-add-btn" onClick={addPage} title="Add 10 more tasks">
+          + 10
         </button>
-      </div>
-
-      {/* Gold bar — lifetime progress */}
-      <div className="checkbox-gold-section">
-        <div className="checkbox-gold-bar">
-          <div className="checkbox-gold-fill" style={{ width: `${goldProgress}%` }} />
-        </div>
-        <div className="checkbox-gold-row">
-          <span className="checkbox-gold-label">{goldProgress} / 100</span>
-          <span className="checkbox-finishes">
-            🏆 <span className="checkbox-finishes-num">{finishes}</span>
-          </span>
-        </div>
+        <button
+          className={`checkbox-submit${canSubmit ? " checkbox-submit-ready" : ""}`}
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          title={canSubmit ? "Submit and reset checked tasks" : `Check at least ${MIN_SUBMIT} tasks to submit`}
+        >
+          Submit ({checkedCount})
+        </button>
       </div>
 
     </div>
