@@ -1067,7 +1067,7 @@ a { color: inherit; }
   white-space: nowrap;
 }
 .toolbar-datetime {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -1522,6 +1522,13 @@ a { color: inherit; }
 }
 .checkbox-list::-webkit-scrollbar { width: 3px; }
 .checkbox-list::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+/* Expanded: 2 columns kept, no height cap, no scroll */
+.checkbox-list-expanded {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .checkbox-item {
   display: flex;
   align-items: center;
@@ -1597,6 +1604,54 @@ a { color: inherit; }
 }
 .checkbox-item:hover .checkbox-delete-btn { opacity: 1; }
 .checkbox-delete-btn:hover { color: #e06c75; }
+
+/* Star favourite button */
+.checkbox-star-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  padding: 0 2px;
+  flex-shrink: 0;
+  color: var(--dim);
+  opacity: 0;
+  cursor: pointer;
+  transition: color 0.12s, opacity 0.12s;
+  line-height: 1;
+}
+.checkbox-item:hover .checkbox-star-btn { opacity: 1; }
+.checkbox-star-active { color: #f5c842 !important; opacity: 1 !important; }
+
+/* Read-only star indicator in collapsed mode */
+.checkbox-star-indicator {
+  color: #f5c842;
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Draggable label in expanded mode */
+.checkbox-label-draggable {
+  cursor: grab;
+}
+.checkbox-label-draggable:active { cursor: grabbing; }
+
+/* Expand / collapse arrow */
+.checkbox-expand-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
+.checkbox-expand-btn {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 14px;
+  padding: 0 16px 2px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.checkbox-expand-btn:hover { color: var(--accent); }
 
 /* Inline rename input */
 .checkbox-edit-input {
