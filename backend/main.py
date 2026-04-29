@@ -133,6 +133,14 @@ class AgendaItem(BaseModel):
     text: str
 
 
+class ChecklistState(BaseModel):
+    labels:     list[str]
+    checked:    list[bool]
+    favourites: list[bool]
+    task_count: int
+    lifetime:   int
+
+
 # ── Word list helpers (words.json) ────────────────────────────────────────────
 
 _WORDS_FILE = Path(__file__).parent / "words.json"
@@ -156,6 +164,30 @@ def _save_words(words: list) -> None:
 # ── Task list helpers (tasks.json) ────────────────────────────────────────────
 
 _TASKS_FILE = Path(__file__).parent / "tasks.json"
+
+# ── Checklist helpers (checklist.json) ────────────────────────────────────────
+
+_CHECKLIST_FILE = Path(__file__).parent / "checklist.json"
+_CHECKLIST_DEFAULT = {
+    "labels":     [f"Task {i+1}" for i in range(10)],
+    "checked":    [False] * 10,
+    "favourites": [False] * 10,
+    "task_count": 10,
+    "lifetime":   0,
+}
+
+def _load_checklist() -> dict:
+    if not _CHECKLIST_FILE.exists():
+        return dict(_CHECKLIST_DEFAULT)
+    try:
+        return json.loads(_CHECKLIST_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return dict(_CHECKLIST_DEFAULT)
+
+def _save_checklist(state: dict) -> None:
+    _CHECKLIST_FILE.write_text(
+        json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 
 def _load_tasks() -> list:
@@ -270,6 +302,19 @@ def delete_task(label: str):
     tasks = _load_tasks()
     tasks = [t for t in tasks if t.get("label") != label]
     _save_tasks(tasks)
+    return {"ok": True}
+
+
+@app.get("/api/checklist")
+def get_checklist():
+    """Return the full checklist state from disk."""
+    return _load_checklist()
+
+
+@app.post("/api/checklist")
+def save_checklist(item: ChecklistState):
+    """Persist the full checklist state to disk."""
+    _save_checklist(item.model_dump())
     return {"ok": True}
 
 

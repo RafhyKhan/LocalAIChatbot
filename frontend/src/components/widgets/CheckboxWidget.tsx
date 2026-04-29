@@ -11,7 +11,8 @@
  * Submit requires ≥ 5 checked. Only checked boxes reset on submit.
  * Gold bar: lifetime % 100 → 🏆 counter grows at each 100 milestone.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { BASE } from "../../api";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
@@ -122,7 +123,51 @@ export default function CheckboxWidget() {
   const [lifetime,     setLifetime]     = useState(loadLifetime);
   const [expanded,     setExpanded]     = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
+  const syncedRef  = useRef(false); // true once backend data has been loaded
+
+  // ── Load from backend on mount (source of truth) ─────────────────────────
+
+  useEffect(() => {
+    fetch(`${BASE}/api/checklist`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.labels && Array.isArray(data.labels)) {
+          const count = data.task_count ?? data.labels.length;
+          setTaskCount(count);
+          setLabels(data.labels);
+          setChecked(data.checked   ?? Array(count).fill(false));
+          setFavourites(data.favourites ?? Array(count).fill(false));
+          setLifetime(data.lifetime ?? 0);
+          // Mirror to localStorage cache
+          localStorage.setItem(LABELS_KEY,    JSON.stringify(data.labels));
+          localStorage.setItem(CHECKED_KEY,   JSON.stringify(data.checked ?? []));
+          localStorage.setItem(FAVS_KEY,      JSON.stringify(data.favourites ?? []));
+          localStorage.setItem(TASKCOUNT_KEY, String(count));
+          localStorage.setItem(LIFETIME_KEY,  String(data.lifetime ?? 0));
+        }
+      })
+      .catch(() => { /* backend unavailable — keep localStorage state */ })
+      .finally(() => { syncedRef.current = true; });
+  }, []);
+
+  // ── Debounced sync to backend on any state change ─────────────────────────
+
+  useEffect(() => {
+    if (!syncedRef.current) return;
+    const timeout = setTimeout(() => {
+      fetch(`${BASE}/api/checklist`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          labels, checked, favourites,
+          task_count: taskCount,
+          lifetime,
+        }),
+      }).catch(() => {});
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [labels, checked, favourites, taskCount, lifetime]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })

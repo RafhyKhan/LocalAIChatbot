@@ -14,3 +14,4 @@ backend/credentials.json
 backend/tasks.json
 backend/google_token.json
 backend/google_token.json
+backend/checklist.json
