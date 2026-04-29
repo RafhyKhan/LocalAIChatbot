@@ -1068,7 +1068,7 @@ a { color: inherit; }
 }
 .toolbar-datetime {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--accent);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -1483,6 +1483,200 @@ a { color: inherit; }
   transition: color .12s;
 }
 .google-queue-remove:hover { color: #f87171; }
+
+/* ─── Checkbox widget ────────────────────────────── */
+.checkbox-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Header right — "Lifetime  42" */
+.checkbox-header-right {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.checkbox-lifetime-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.checkbox-lifetime-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Green progress bar — current round */
+.checkbox-progress-bar {
+  height: 4px;
+  background: var(--hover);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.checkbox-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+.checkbox-progress-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+  margin-top: -3px;
+}
+
+/* Task grid — 2 columns */
+.checkbox-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+}
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 5px;
+  border-radius: 5px;
+  transition: background 0.12s;
+  user-select: none;
+  min-width: 0;
+}
+.checkbox-item:hover { background: var(--hover); }
+.checkbox-item-checked { opacity: 0.45; }
+.checkbox-item-locked  { opacity: 0.6; }
+
+/* Checkbox button */
+.checkbox-box {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--dim);
+  border-radius: 4px;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  padding: 0;
+}
+.checkbox-box:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.checkbox-item-checked .checkbox-box {
+  border-color: var(--accent);
+  background: rgba(25, 195, 125, 0.15);
+}
+
+/* Label */
+.checkbox-item-label {
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+.checkbox-label-default {
+  color: var(--muted);
+  font-style: italic;
+}
+.checkbox-item-checked .checkbox-item-label {
+  text-decoration: line-through;
+  color: var(--muted);
+  cursor: default;
+}
+
+/* Inline rename input */
+.checkbox-edit-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  background: var(--input-bg, var(--hover));
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 1px 5px;
+  outline: none;
+}
+
+/* Submit */
+.checkbox-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.checkbox-submit {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 4px 14px;
+  cursor: not-allowed;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.checkbox-submit-ready {
+  background: rgba(25, 195, 125, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+.checkbox-submit-ready:hover { background: rgba(25, 195, 125, 0.25); }
+
+/* Gold bar — lifetime milestones */
+.checkbox-gold-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.checkbox-gold-bar {
+  height: 5px;
+  background: var(--hover);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.checkbox-gold-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c8a415, #f5c842, #c8a415);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.checkbox-gold-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.checkbox-gold-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+.checkbox-finishes {
+  font-size: 11px;
+  color: #c8a415;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.checkbox-finishes-num {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ─── Notes widget ───────────────────────────────── */
 .notes-widget {

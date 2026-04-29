@@ -47,6 +47,7 @@ import NotesWidget         from "./widgets/NotesWidget";
 import GoogleSearchWidget  from "./widgets/GoogleSearchWidget";
 import MultiNewsWidget     from "./widgets/MultiNewsWidget";
 import CalendarWidget     from "./widgets/CalendarWidget";
+import CheckboxWidget     from "./widgets/CheckboxWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "googlesearch", icon: "🔍", label: "Google Search", description: "Quick Google search bar",                      colSpan: 2 },
   { id: "multinews",   icon: "🌍", label: "World News",    description: "BBC, Reuters, AP, Al Jazeera, CBC, CTV, Calgary Herald", colSpan: 1 },
   { id: "calendar",    icon: "📅", label: "Google Calendar", description: "Google Calendar events + daily weather + agenda", colSpan: 2 },
+  { id: "checkbox",    icon: "✅", label: "Checklist",       description: "10 checkboxes with a persistent completion counter", colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -88,6 +90,7 @@ function renderWidget(id: string) {
     case "googlesearch": return <GoogleSearchWidget />;
     case "multinews":    return <MultiNewsWidget />;
     case "calendar":     return <CalendarWidget />;
+    case "checkbox":     return <CheckboxWidget />;
     default:             return null;
   }
 }
