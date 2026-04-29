@@ -1068,7 +1068,7 @@ a { color: inherit; }
 }
 .toolbar-datetime {
   font-size: 11px;
-  color: var(--accent);
+  color: var(--text);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -1548,8 +1548,8 @@ a { color: inherit; }
   min-width: 0;
 }
 .checkbox-item:hover { background: var(--hover); }
-.checkbox-item-checked { opacity: 0.45; }
-.checkbox-item-locked  { opacity: 0.6; }
+.checkbox-item-checked { opacity: 1; }
+.checkbox-item-locked  { opacity: 1; }
 
 /* Checkbox button */
 .checkbox-box {
@@ -1588,12 +1588,12 @@ a { color: inherit; }
   flex: 1;
 }
 .checkbox-label-default {
-  color: var(--muted);
-  font-style: italic;
+  color: var(--text);
+  font-style: normal;
 }
 .checkbox-item-checked .checkbox-item-label {
   text-decoration: line-through;
-  color: var(--muted);
+  color: var(--text);
   cursor: default;
 }
 
