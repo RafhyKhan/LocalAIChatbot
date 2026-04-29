@@ -2006,6 +2006,14 @@ a { color: inherit; }
   gap: 8px;
 }
 
+/* Google Calendar subtitle link */
+.cal-gcal-link {
+  text-decoration: none;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.cal-gcal-link:hover { color: var(--accent); }
+
 /* "Connect Google ↗" chip */
 .cal-connect-chip {
   background: rgba(25, 195, 125, 0.12);

@@ -260,7 +260,14 @@ export default function CalendarWidget() {
               + Add Event
             </button>
           )}
-          <span className="widget-subtitle">Google Calendar · Open-Meteo</span>
+          <a
+            className="widget-subtitle cal-gcal-link"
+            href="https://calendar.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google Calendar · Open-Meteo
+          </a>
         </div>
       </div>
 

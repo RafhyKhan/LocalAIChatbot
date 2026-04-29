@@ -41,7 +41,7 @@ export default function QuoteWidget() {
 
       {!loading && !error && quote && (
         <div className="quote-card">
-          <p className="quote-text">"{quote.text}"</p>
+          <p className="quote-text">{quote.text}</p>
           <p className="quote-author">— {quote.author}</p>
         </div>
       )}
