@@ -236,11 +236,16 @@ def save_agenda(date: str, text: str) -> dict:
     if not service:
         raise RuntimeError("Not connected to Google Calendar.")
 
+    # Widen the search window by ±1 day so all-day events (which have no time
+    # component) are not missed by UTC datetime boundary comparisons.
+    # Then filter strictly by exact date to avoid false matches.
     try:
+        prev_date = (datetime.fromisoformat(date) - timedelta(days=1)).strftime("%Y-%m-%d")
+        next_date = (datetime.fromisoformat(date) + timedelta(days=1)).strftime("%Y-%m-%d")
         result = service.events().list(
             calendarId="primary",
-            timeMin=f"{date}T00:00:00Z",
-            timeMax=f"{date}T23:59:59Z",
+            timeMin=f"{prev_date}T00:00:00Z",
+            timeMax=f"{next_date}T23:59:59Z",
             q="📋 Agenda",
             singleEvents=True,
         ).execute()
@@ -248,7 +253,9 @@ def save_agenda(date: str, text: str) -> dict:
         result = {"items": []}
 
     existing = next(
-        (e for e in result.get("items", []) if e.get("summary") == "📋 Agenda"),
+        (e for e in result.get("items", [])
+         if e.get("summary") == "📋 Agenda"
+         and e.get("start", {}).get("date") == date),
         None,
     )
 
