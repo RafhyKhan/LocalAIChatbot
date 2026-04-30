@@ -8,10 +8,12 @@ interface TokenInfo {
 
 export default function InputArea({
   onSend,
+  onStop,
   disabled,
   tokenInfo,
 }: {
   onSend: (msg: string) => void;
+  onStop?: () => void;
   disabled: boolean;
   tokenInfo: TokenInfo | null;
 }) {
@@ -53,15 +55,24 @@ export default function InputArea({
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
           }}
         />
-        <button
-          className={`send-btn${text.trim() && !disabled ? " send-active" : ""}`}
-          onClick={send}
-          disabled={!text.trim() || disabled}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-          </svg>
-        </button>
+        {disabled ? (
+          <button className="stop-btn" onClick={onStop} title="Stop generating">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <rect x="0" y="0" width="12" height="12" rx="2" />
+            </svg>
+            Stop
+          </button>
+        ) : (
+          <button
+            className={`send-btn${text.trim() ? " send-active" : ""}`}
+            onClick={send}
+            disabled={!text.trim()}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+            </svg>
+          </button>
+        )}
       </div>
       <div className="input-footer">
         <p className="input-hint">Enter to send · Shift+Enter for new line</p>

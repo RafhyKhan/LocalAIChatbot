@@ -21,7 +21,7 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
@@ -582,7 +582,7 @@ async def _execute_tool(name: str, arguments: str) -> str:
 # ── Chat endpoint ─────────────────────────────────────────────────
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
     data = conv_store.get_conversation(req.conversation_id)
     if not data:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -680,6 +680,8 @@ async def chat(req: ChatRequest):
                     })
 
                 # Loop back: Gemma may call more tools after seeing the results
+                if await request.is_disconnected():
+                    return
 
             # ── Stream (or yield) final response ──────────────────
             if final_content is not None:
@@ -698,6 +700,8 @@ async def chat(req: ChatRequest):
                     extra_body={"num_ctx": 32768},
                 )
                 async for chunk in stream_resp:
+                    if await request.is_disconnected():
+                        return
                     delta = chunk.choices[0].delta.content or ""
                     if delta:
                         full += delta

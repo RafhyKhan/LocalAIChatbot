@@ -26,6 +26,7 @@ export default function App() {
   const [sources, setSources] = useState<string[]>([]);
   const [tokenInfo, setTokenInfo] = useState<{ used: number; limit: number; remaining: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef  = useRef<(() => void) | null>(null);
 
   useEffect(() => { loadList(); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamText]);
@@ -72,11 +73,12 @@ export default function App() {
     setCalculating(false);
     setSources([]);
 
-    streamChat(
+    const abort = streamChat(
       activeId,
       message,
       (d) => { setSearching(false); setCalculating(false); setStreamText((t) => t + d); },
       async () => {
+        abortRef.current = null;
         setStreaming(false);
         setSearching(false);
         setCalculating(false);
@@ -87,11 +89,21 @@ export default function App() {
         loadList(); // refresh titles + order
         setTokenInfo(await fetchTokens(activeId!));
       },
-      (err) => { console.error(err); setStreaming(false); setStreamText(""); setSearching(false); setCalculating(false); },
+      (err) => { abortRef.current = null; console.error(err); setStreaming(false); setStreamText(""); setSearching(false); setCalculating(false); },
       () => setSearching(true),
       () => setCalculating(true),
       (urls) => setSources(urls)
     );
+    abortRef.current = abort;
+  }
+
+  function handleStop() {
+    abortRef.current?.();
+    abortRef.current = null;
+    setStreaming(false);
+    setStreamText("");
+    setSearching(false);
+    setCalculating(false);
   }
 
   return (
@@ -169,7 +181,7 @@ export default function App() {
               )}
               <div ref={bottomRef} />
             </div>
-            <InputArea onSend={send} disabled={streaming} tokenInfo={tokenInfo} />
+            <InputArea onSend={send} onStop={handleStop} disabled={streaming} tokenInfo={tokenInfo} />
           </>
         )}
       </main>
