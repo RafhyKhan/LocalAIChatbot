@@ -509,6 +509,7 @@ export default function CheckboxWidget() {
   // ── Delete section ────────────────────────────────────────────────────────
 
   const onDeleteSection = useCallback((section: Section) => {
+    if (!window.confirm(`Delete section "${section.title}"?`)) return;
     updateSections(secs => {
       const withoutSec = secs.filter(s => s.id !== section.id);
       if (section.tasks.length === 0) return withoutSec;
