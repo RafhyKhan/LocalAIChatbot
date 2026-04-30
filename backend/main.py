@@ -19,6 +19,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -133,12 +134,20 @@ class AgendaItem(BaseModel):
     text: str
 
 
-class ChecklistState(BaseModel):
-    labels:     list[str]
-    checked:    list[bool]
-    favourites: list[bool]
-    task_count: int
-    lifetime:   int
+class ChecklistTaskItem(BaseModel):
+    id:      str
+    label:   str
+    checked: bool
+
+class ChecklistSectionItem(BaseModel):
+    id:    str
+    type:  str   # "favourites" | "unsorted" | "custom"
+    title: str
+    tasks: list[ChecklistTaskItem]
+
+class ChecklistStateV2(BaseModel):
+    sections: list[ChecklistSectionItem]
+    lifetime: int
 
 
 # ── Word list helpers (words.json) ────────────────────────────────────────────
@@ -167,22 +176,52 @@ _TASKS_FILE = Path(__file__).parent / "tasks.json"
 
 # ── Checklist helpers (checklist.json) ────────────────────────────────────────
 
-_CHECKLIST_FILE = Path(__file__).parent / "checklist.json"
-_CHECKLIST_DEFAULT = {
-    "labels":     [f"Task {i+1}" for i in range(10)],
-    "checked":    [False] * 10,
-    "favourites": [False] * 10,
-    "task_count": 10,
-    "lifetime":   0,
-}
+_CHECKLIST_FILE         = Path(__file__).parent / "checklist.json"
+_CHECKLIST_INITIAL_FILE = Path(__file__).parent / "checklist-initial.json"
+
+def _migrate_old_checklist(data: dict) -> dict:
+    """Convert flat-array format to sections format. Backs up old file first."""
+    labels     = data.get("labels", [])
+    checked    = data.get("checked", [])
+    favourites = data.get("favourites", [])
+    lifetime   = data.get("lifetime", 0)
+
+    # Starred tasks → Favourites section; rest → Unsorted section
+    fav_tasks      = []
+    unsorted_tasks = []
+    for i, label in enumerate(labels):
+        task = {
+            "id":      str(uuid4()),
+            "label":   label,
+            "checked": checked[i] if i < len(checked) else False,
+        }
+        if i < len(favourites) and favourites[i]:
+            fav_tasks.append(task)
+        else:
+            unsorted_tasks.append(task)
+
+    sections = []
+    if fav_tasks:
+        sections.append({"id": "favourites", "type": "favourites",
+                         "title": "⭐ Favourites", "tasks": fav_tasks})
+    if unsorted_tasks:
+        sections.append({"id": str(uuid4()), "type": "unsorted",
+                         "title": "Unsorted", "tasks": unsorted_tasks})
+
+    new_data = {"sections": sections, "lifetime": lifetime}
+    _CHECKLIST_FILE.write_text(json.dumps(new_data, indent=2, ensure_ascii=False), encoding="utf-8")
+    return new_data
 
 def _load_checklist() -> dict:
     if not _CHECKLIST_FILE.exists():
-        return dict(_CHECKLIST_DEFAULT)
+        return {"sections": [], "lifetime": 0}
     try:
-        return json.loads(_CHECKLIST_FILE.read_text(encoding="utf-8"))
+        data = json.loads(_CHECKLIST_FILE.read_text(encoding="utf-8"))
+        if "labels" in data:          # old flat format — migrate
+            return _migrate_old_checklist(data)
+        return data
     except Exception:
-        return dict(_CHECKLIST_DEFAULT)
+        return {"sections": [], "lifetime": 0}
 
 def _save_checklist(state: dict) -> None:
     _CHECKLIST_FILE.write_text(
@@ -307,13 +346,13 @@ def delete_task(label: str):
 
 @app.get("/api/checklist")
 def get_checklist():
-    """Return the full checklist state from disk."""
+    """Return the full checklist state from disk (migrates old format on first call)."""
     return _load_checklist()
 
 
 @app.post("/api/checklist")
-def save_checklist(item: ChecklistState):
-    """Persist the full checklist state to disk."""
+def save_checklist(item: ChecklistStateV2):
+    """Persist the full checklist state (sections format) to disk."""
     _save_checklist(item.model_dump())
     return {"ok": True}
 

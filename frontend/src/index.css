@@ -1485,54 +1485,184 @@ a { color: inherit; }
 .google-queue-remove:hover { color: #f87171; }
 
 /* ─── Checkbox widget ────────────────────────────── */
+/* ── CheckboxWidget ─────────────────────────────────────────────── */
+
 .checkbox-widget {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
 
-/* Header right — "Lifetime  42" */
-.checkbox-header-right {
+/* Header right */
+.checkbox-header-right { display: flex; align-items: baseline; gap: 5px; }
+.checkbox-lifetime-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.checkbox-lifetime-num { font-size: 22px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; }
+
+/* Gold bar */
+.checkbox-gold-section { display: flex; flex-direction: column; gap: 3px; }
+.checkbox-gold-bar { height: 5px; background: var(--hover); border-radius: 3px; overflow: hidden; }
+.checkbox-gold-fill { height: 100%; background: linear-gradient(90deg, #c8a415, #f5c842, #c8a415); border-radius: 3px; transition: width 0.4s ease; }
+.checkbox-gold-row { display: flex; justify-content: space-between; align-items: center; }
+.checkbox-gold-label { font-size: 10px; color: var(--muted); }
+.checkbox-finishes { font-size: 11px; color: #c8a415; display: flex; align-items: center; gap: 3px; }
+.checkbox-finishes-num { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Controls row — + Add Section | +10 draggable */
+.cb-controls {
   display: flex;
-  align-items: baseline;
-  gap: 5px;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 0;
 }
-.checkbox-lifetime-label {
-  font-size: 10px;
+.cb-add-section-btn {
+  background: none;
+  border: 1px dashed var(--dim);
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
 }
-.checkbox-lifetime-num {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
+.cb-add-section-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.cb-add-10-btn {
+  background: none;
+  border: 1px dashed var(--dim);
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: grab;
+  transition: border-color 0.12s, color 0.12s;
+  touch-action: none;
+}
+.cb-add-10-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cb-add-10-btn--dragging { opacity: 0.5; cursor: grabbing; }
+
+/* Sections container */
+.cb-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/* Task grid — 2 columns, fixed height, scrollable */
-.checkbox-list {
+/* Individual section */
+.cb-section {
+  border: 1px solid var(--sidebar-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cb-section-fav {
+  border-color: rgba(245, 200, 66, 0.35);
+  background: rgba(245, 200, 66, 0.04);
+}
+
+/* Section header */
+.cb-section-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px 4px;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+.cb-section-fav .cb-section-header { border-bottom-color: rgba(245, 200, 66, 0.2); }
+
+.cb-section-handle {
+  color: var(--dim);
+  font-size: 13px;
+  cursor: grab;
+  flex-shrink: 0;
+  line-height: 1;
+  touch-action: none;
+}
+.cb-section-handle:active { cursor: grabbing; }
+.cb-section-handle--hidden { visibility: hidden; }
+
+.cb-section-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: default;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cb-section-fav .cb-section-title { color: #c8a415; }
+
+.cb-section-title-input {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--hover);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 1px 5px;
+  outline: none;
+  min-width: 0;
+}
+
+.cb-section-delete {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  cursor: pointer;
+  transition: color 0.12s, opacity 0.12s;
+}
+.cb-section-header:hover .cb-section-delete { opacity: 1; }
+.cb-section-delete:hover { color: #e06c75; }
+
+/* Section body — droppable zone */
+.cb-section-body {
+  padding: 4px 6px 6px;
+  min-height: 28px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.cb-section-body--add10-over {
+  background: rgba(34, 197, 94, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.45);
+}
+
+/* Task grid inside section — 2 columns */
+.cb-section-task-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
-  max-height: 168px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-.checkbox-list::-webkit-scrollbar { width: 3px; }
-.checkbox-list::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
-
-/* Expanded: 2 columns kept, no height cap, no scroll */
-.checkbox-list-expanded {
-  max-height: none;
-  overflow-y: visible;
 }
 
+/* Empty section hint */
+.cb-section-empty {
+  font-size: 11px;
+  color: var(--dim);
+  text-align: center;
+  padding: 6px 0 2px;
+  grid-column: 1 / -1;
+}
+
+.cb-empty-state {
+  font-size: 12px;
+  color: var(--dim);
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* Task row */
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   padding: 4px 5px;
   border-radius: 5px;
   transition: background 0.12s;
@@ -1541,32 +1671,22 @@ a { color: inherit; }
 }
 .checkbox-item:hover { background: var(--hover); }
 .checkbox-item-checked { opacity: 1; }
-.checkbox-item-locked  { opacity: 1; }
 
 /* Checkbox button */
 .checkbox-box {
-  width: 15px;
-  height: 15px;
+  width: 15px; height: 15px;
   flex-shrink: 0;
   border: 1.5px solid var(--dim);
   border-radius: 4px;
   background: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   color: var(--accent);
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
   padding: 0;
 }
-.checkbox-box:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-.checkbox-item-checked .checkbox-box {
-  border-color: var(--accent);
-  background: rgba(25, 195, 125, 0.15);
-}
+.checkbox-box:disabled { cursor: not-allowed; opacity: 0.4; }
+.checkbox-item-checked .checkbox-box { border-color: var(--accent); background: rgba(25, 195, 125, 0.15); }
 
 /* Label */
 .checkbox-item-label {
@@ -1579,115 +1699,52 @@ a { color: inherit; }
   min-width: 0;
   flex: 1;
 }
-.checkbox-label-default {
-  color: var(--text);
-  font-style: normal;
+.checkbox-label-default { color: var(--text); }
+.checkbox-item-checked .checkbox-item-label { text-decoration: line-through; color: var(--text); cursor: default; }
+.checkbox-label-draggable { cursor: grab; }
+.checkbox-label-draggable:active { cursor: grabbing; }
+
+/* Star button */
+.checkbox-star-btn {
+  background: none; border: none;
+  font-size: 13px; padding: 0 2px;
+  flex-shrink: 0; color: var(--dim);
+  opacity: 0; cursor: pointer;
+  transition: color 0.12s, opacity 0.12s; line-height: 1;
 }
-.checkbox-item-checked .checkbox-item-label {
-  text-decoration: line-through;
-  color: var(--text);
-  cursor: default;
-}
+.checkbox-item:hover .checkbox-star-btn { opacity: 1; }
+.checkbox-star-active { color: #f5c842 !important; opacity: 1 !important; }
+.checkbox-star-indicator { color: #f5c842; font-size: 13px; flex-shrink: 0; line-height: 1; }
 
 /* Delete task button */
 .checkbox-delete-btn {
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  opacity: 0;
-  transition: color 0.12s, opacity 0.12s;
-  cursor: pointer;
+  background: none; border: none;
+  color: var(--dim); font-size: 14px; line-height: 1;
+  padding: 0 2px; flex-shrink: 0;
+  opacity: 0; transition: color 0.12s, opacity 0.12s; cursor: pointer;
 }
 .checkbox-item:hover .checkbox-delete-btn { opacity: 1; }
 .checkbox-delete-btn:hover { color: #e06c75; }
 
-/* Star favourite button */
-.checkbox-star-btn {
-  background: none;
-  border: none;
-  font-size: 13px;
-  padding: 0 2px;
-  flex-shrink: 0;
-  color: var(--dim);
-  opacity: 0;
-  cursor: pointer;
-  transition: color 0.12s, opacity 0.12s;
-  line-height: 1;
-}
-.checkbox-item:hover .checkbox-star-btn { opacity: 1; }
-.checkbox-star-active { color: #f5c842 !important; opacity: 1 !important; }
-
-/* Read-only star indicator in collapsed mode */
-.checkbox-star-indicator {
-  color: #f5c842;
-  font-size: 13px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-/* Draggable label in expanded mode */
-.checkbox-label-draggable {
-  cursor: grab;
-}
-.checkbox-label-draggable:active { cursor: grabbing; }
-
-/* Expand / collapse arrow */
-.checkbox-expand-row {
-  display: flex;
-  justify-content: center;
-  margin-top: 2px;
-}
-.checkbox-expand-btn {
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-size: 14px;
-  padding: 0 16px 2px;
-  cursor: pointer;
-  line-height: 1;
-  transition: color 0.12s;
-}
-.checkbox-expand-btn:hover { color: var(--accent); }
-
-/* Inline rename input */
+/* Inline task rename input */
 .checkbox-edit-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
+  flex: 1; min-width: 0; font-size: 12px;
   background: var(--input-bg, var(--hover));
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  color: var(--text);
-  padding: 1px 5px;
-  outline: none;
+  border: 1px solid var(--accent); border-radius: 4px;
+  color: var(--text); padding: 1px 5px; outline: none;
 }
 
-/* Footer — + 10 button left, Submit right */
+/* Footer */
 .checkbox-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding-top: 4px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--sidebar-border);
 }
-.checkbox-add-btn {
-  background: none;
-  border: 1px dashed var(--dim);
-  color: var(--muted);
-  border-radius: 6px;
-  font-size: 11px;
-  padding: 3px 10px;
-  cursor: pointer;
-  transition: border-color 0.12s, color 0.12s;
-}
-.checkbox-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 .checkbox-submit {
   background: var(--hover);
-  border: 1px solid var(--border);
+  border: 1px solid var(--sidebar-border);
   color: var(--muted);
   border-radius: 6px;
   font-size: 12px;
@@ -1704,47 +1761,15 @@ a { color: inherit; }
 }
 .checkbox-submit-ready:hover { background: rgba(25, 195, 125, 0.25); }
 
-/* Gold bar — lifetime milestones */
-.checkbox-gold-section {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
+/* Expand / collapse — sits below gold bar */
+.checkbox-expand-row { display: flex; justify-content: center; padding: 1px 0; }
+.checkbox-expand-btn {
+  background: none; border: none; color: var(--dim);
+  font-size: 13px; padding: 2px 20px;
+  cursor: pointer; line-height: 1; transition: color 0.12s;
+  border-radius: 4px;
 }
-.checkbox-gold-bar {
-  height: 5px;
-  background: var(--hover);
-  border-radius: 3px;
-  overflow: hidden;
-}
-.checkbox-gold-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #c8a415, #f5c842, #c8a415);
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-.checkbox-gold-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.checkbox-gold-label {
-  font-size: 10px;
-  color: var(--muted);
-}
-.checkbox-finishes {
-  font-size: 11px;
-  color: #c8a415;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.checkbox-finishes-num {
-  font-size: 16px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
+.checkbox-expand-btn:hover { color: var(--accent); }
 
 /* ─── Notes widget ───────────────────────────────── */
 .notes-widget {
