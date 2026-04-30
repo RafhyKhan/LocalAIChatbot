@@ -545,7 +545,7 @@ export default function CheckboxWidget() {
     setLifetime(nextLifetime);
     setSections(prev => prev.map(s => ({
       ...s,
-      tasks: s.tasks.map(t => t.checked ? { ...t, checked: false } : t),
+      tasks: s.tasks.map((t, i) => t.checked ? { ...t, checked: false, label: defaultLabel(i + 1) } : t),
     })));
   }
 
