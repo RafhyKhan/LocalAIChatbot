@@ -56,8 +56,8 @@ client = AsyncOpenAI(
 )
 MODEL = "docker.io/ai/gemma4:E2B"
 
-#The recent window, is its direct memory. Token usage has to fit the RECENTMEMORY number of messages. 
-RECENT_WINDOW = 16
+#The recent window, is its direct memory. Token usage has to fit the RECENTMEMORY number of messages.
+RECENT_WINDOW = 80
 SEMANTIC_K    = 5
 
 #More Str Information Vairables
@@ -458,7 +458,7 @@ def get_token_count(conv_id: str):
     recent = conv_store.get_recent_messages(conv_id, limit=RECENT_WINDOW)
     total_chars = len(SYSTEM_PROMPT) + sum(len(m["content"]) for m in recent)
     used  = total_chars // 4
-    limit = 8192
+    limit = 32000
 
     return {"used": used, "limit": limit, "remaining": max(0, limit - used)}
 
@@ -627,6 +627,7 @@ async def chat(req: ChatRequest):
                     tools=ALL_TOOLS,
                     tool_choice="auto",
                     stream=False,
+                    extra_body={"num_ctx": 32768},
                 )
 
                 tool_calls = response.choices[0].message.tool_calls
@@ -694,6 +695,7 @@ async def chat(req: ChatRequest):
                     model=MODEL,
                     messages=messages,
                     stream=True,
+                    extra_body={"num_ctx": 32768},
                 )
                 async for chunk in stream_resp:
                     delta = chunk.choices[0].delta.content or ""
