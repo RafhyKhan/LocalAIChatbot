@@ -1,5 +1,5 @@
 /**
- * WeatherWidget — 7-day Calgary forecast from Open-Meteo via /api/weather.
+ * WeatherWidget — 7-day local forecast from Open-Meteo via /api/weather.
  * Self-contained: fetches its own data, handles loading + error states.
  * Left/right arrow buttons scroll the card row when all 7 days don't fit.
  * Each day card has a small note field — notes are saved to localStorage.
@@ -59,7 +59,7 @@ export default function WeatherWidget() {
     fetch(`${BASE}/api/weather`)
       .then((r) => r.json())
       .then(setData)
-      .catch(() => setData({ days: [], location: "Calgary, AB", error: "unavailable" }))
+      .catch(() => setData({ days: [], location: import.meta.env.VITE_USER_LOCATION || "Local", error: "unavailable" }))
       .finally(() => setLoading(false));
   }, []);
 
@@ -76,7 +76,7 @@ export default function WeatherWidget() {
   return (
     <div className="widget weather-widget">
       <div className="widget-header">
-        <span className="widget-title">📍 {data?.location ?? "Calgary, AB"}</span>
+        <span className="widget-title">📍 {data?.location ?? import.meta.env.VITE_USER_LOCATION ?? "Local"}</span>
         <span className="widget-subtitle">7-Day Forecast · Open-Meteo</span>
       </div>
 

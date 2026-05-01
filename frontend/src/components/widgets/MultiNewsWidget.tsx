@@ -26,7 +26,7 @@ const SOURCES = [
   { key: "aljazeera", label: "Al Jazeera",         url: "https://www.aljazeera.com"         },
   { key: "cbc",       label: "CBC News",           url: "https://www.cbc.ca/news"           },
   { key: "ctv",       label: "CTV News",           url: "https://www.ctvnews.ca"            },
-  { key: "calgary",   label: "Calgary Herald",     url: "https://calgaryherald.com"         },
+  { key: "calgary",   label: import.meta.env.VITE_LOCAL_NEWS_LABEL || "Local News", url: import.meta.env.VITE_LOCAL_NEWS_URL || "" },
 ];
 
 export default function MultiNewsWidget() {

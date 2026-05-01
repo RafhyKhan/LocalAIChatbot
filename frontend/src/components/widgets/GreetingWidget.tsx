@@ -25,16 +25,18 @@ function formatDate(d: Date): string {
 
 // ── Customise ─────────────────────────────────────────────────────────────────
 
+const USER_NAME = import.meta.env.VITE_USER_NAME || "there";
+
 function getGreeting(d: Date): string {
   const h = d.getHours();
-  if (h >= 5  && h < 12) return "Good Morning, Rafhy!";
-  if (h >= 12 && h < 17) return "Good Afternoon, Rafhy!";
-  if (h >= 17 && h < 21) return "Good Evening, Rafhy!";
-  return "Good Night, Rafhy!";
+  if (h >= 5  && h < 12) return `Good Morning, ${USER_NAME}!`;
+  if (h >= 12 && h < 17) return `Good Afternoon, ${USER_NAME}!`;
+  if (h >= 17 && h < 21) return `Good Evening, ${USER_NAME}!`;
+  return `Good Night, ${USER_NAME}!`;
 }
 
-const QUOTE_URL = "https://react-http-57c1f-default-rtdb.firebaseio.com/quotes.json";
-//                 ↑ swap this URL to point at a different quotes endpoint
+const QUOTE_URL = import.meta.env.VITE_QUOTE_URL ?? "";
+//                 ↑ set VITE_QUOTE_URL in frontend/.env to point at your quotes endpoint
 
 const REFRESH   = true;
 //                ↑ true  = new random quote every page load

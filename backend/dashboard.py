@@ -7,14 +7,18 @@ structure so the frontend widget degrades gracefully without crashing.
 """
 
 import json
+import os
 import re
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
 # ── Weather (Open-Meteo, no API key required) ─────────────────────────────────
-CALGARY_LAT = 51.0447
-CALGARY_LNG = -114.0719
+# Coordinates and display name loaded from backend/.env
+_LAT           = float(os.getenv("USER_LOCATION_LAT",   "0"))
+_LNG           = float(os.getenv("USER_LOCATION_LNG",   "0"))
+_LOCATION_SHORT = os.getenv("USER_LOCATION_SHORT", "Local")
+_TIMEZONE       = os.getenv("USER_TIMEZONE",        "UTC")
 
 # WMO weather-code → emoji icon
 _WMO_ICONS = {
@@ -48,13 +52,14 @@ _WMO_DESC = {
 
 
 def get_forecast() -> dict:
-    """Return a 7-day daily forecast for Calgary from Open-Meteo."""
+    """Return a 7-day daily forecast from Open-Meteo for the configured location."""
+    tz_encoded = _TIMEZONE.replace("/", "%2F")
     url = (
         "https://api.open-meteo.com/v1/forecast"
-        f"?latitude={CALGARY_LAT}&longitude={CALGARY_LNG}"
+        f"?latitude={_LAT}&longitude={_LNG}"
         "&daily=weathercode,temperature_2m_max,temperature_2m_min"
         ",windspeed_10m_max,precipitation_sum,precipitation_probability_max"
-        "&timezone=America%2FEdmonton&forecast_days=7"
+        f"&timezone={tz_encoded}&forecast_days=7"
     )
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "RainAI/1.0"})
@@ -79,10 +84,10 @@ def get_forecast() -> dict:
                 "precip_prob":  daily["precipitation_probability_max"][i] or 0,
             })
 
-        return {"days": days, "location": "Calgary, AB"}
+        return {"days": days, "location": _LOCATION_SHORT}
 
     except Exception as e:
-        return {"days": [], "location": "Calgary, AB", "error": str(e)}
+        return {"days": [], "location": _LOCATION_SHORT, "error": str(e)}
 
 
 # ── News (BBC RSS, stdlib XML only) ───────────────────────────────────────────
@@ -131,7 +136,7 @@ _NEWS_SOURCES = {
     "aljazeera": "https://www.aljazeera.com/xml/rss/all.xml",
     "cbc":       "https://www.cbc.ca/cmlink/rss-topstories",
     "ctv":       "https://news.google.com/rss/search?q=site:ctvnews.ca&hl=en-CA&gl=CA&ceid=CA:en",
-    "calgary":   "https://calgaryherald.com/feed/",
+    "calgary":   os.getenv("LOCAL_NEWS_RSS", ""),
 }
 
 _NS = {"media": "http://search.yahoo.com/mrss/", "dc": "http://purl.org/dc/elements/1.1/"}

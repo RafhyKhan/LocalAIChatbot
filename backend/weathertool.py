@@ -8,9 +8,11 @@ accurate and always real-time.
 """
 
 import json
+import os
 import urllib.request
 
-DEFAULT_LOCATION = "Calgary, Alberta"
+DEFAULT_LOCATION = os.getenv("USER_LOCATION", "your city")
+_location_short  = os.getenv("USER_LOCATION_SHORT", "your city")
 
 WEATHER_TOOLS = [
     {
@@ -23,7 +25,7 @@ WEATHER_TOOLS = [
                 "never search the web for weather, as web results are often stale. "
                 "Use for: current temperature, feels-like, conditions, humidity, wind speed, "
                 "UV index, visibility, and 3-day forecast. "
-                "If the user does not specify a location, default to Calgary, Alberta, Canada."
+                f"If the user does not specify a location, default to {DEFAULT_LOCATION}."
             ),
             "parameters": {
                 "type": "object",
@@ -32,8 +34,8 @@ WEATHER_TOOLS = [
                         "type": "string",
                         "description": (
                             "City or location to get weather for. "
-                            "Examples: 'Calgary', 'London', 'New York', 'Tokyo'. "
-                            "Defaults to Calgary if not specified."
+                            "Examples: 'London', 'New York', 'Tokyo'. "
+                            f"Defaults to {_location_short} if not specified."
                         ),
                     }
                 },
@@ -123,7 +125,7 @@ def get_weather(location: str = DEFAULT_LOCATION) -> str:
     except Exception as e:
         return (
             f"Could not fetch weather for '{location}': {e}\n"
-            "Try a different location name, e.g. 'Calgary' or 'London, UK'."
+            "Try a different location name, e.g. 'London, UK' or 'New York'."
         )
 
 

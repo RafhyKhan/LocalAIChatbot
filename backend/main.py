@@ -14,8 +14,12 @@ Available tools Gemma can call:
   calculate(expression) — evaluates math accurately via SymPy
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import asyncio
 import json
+import os
 import re
 from datetime import datetime, date, timedelta
 from pathlib import Path
@@ -60,8 +64,10 @@ MODEL = "docker.io/ai/gemma4:E2B"
 RECENT_WINDOW = 80
 SEMANTIC_K    = 5
 
-#More Str Information Vairables
-CURRENT_LOCATION = "Calgary, Alberta, Canada"
+# Personal config — loaded from backend/.env (never committed to git)
+USER_FULL_NAME    = os.getenv("USER_FULL_NAME",    "the user")
+USER_FIRST_NAME   = os.getenv("USER_FIRST_NAME",   "there")
+CURRENT_LOCATION  = os.getenv("USER_LOCATION",     "your city")
 
 # All tools available to Gemma — combined into one list for the API call
 # Update the static tool list in frontend/src/components/Sidebar.tsx when adding/removing tools here
@@ -69,8 +75,8 @@ ALL_TOOLS = searcher.SEARCH_TOOLS + calc.CALCULATOR_TOOLS + datetool.DATETOOL_TO
 
 # System prompt — tells Gemma upfront what it can do and how to behave
 SYSTEM_PROMPT = (
-    "Your name is RainAI. You are a helpful, concise personal AI assistant built exclusively for and by Rafhy Khan."
-    "You are in Calgary, Alberta, Canada."
+    f"Your name is RainAI. You are a helpful, concise personal AI assistant built exclusively for and by {USER_FULL_NAME}."
+    f"You are located in {CURRENT_LOCATION}."
     "\n\n"
     "You have access to real-time web search."
     "When asked about current events, news, prices, sports, or anything "
@@ -83,7 +89,7 @@ SYSTEM_PROMPT = (
     "ALWAYS use this tool for ANY weather-related question — current conditions, "
     "temperature, feels-like, humidity, wind, UV index, or forecast. "
     "NEVER search the web for weather; the get_weather tool is faster and always accurate. "
-    "If the user does not specify a location, default to Calgary, Alberta."
+    f"If the user does not specify a location, default to {CURRENT_LOCATION}."
     "\n\n"
     "You also have access to a precise calculator tool. "
     "ALWAYS use the calculator tool for any mathematical computation — "
@@ -100,7 +106,7 @@ SYSTEM_PROMPT = (
     "You are a helpful assistant, not an authoritative source of truth. "
     "You can and do make mistakes. When uncertain, say so clearly. "
     "Always distinguish between what you know from training and what you found via web search. "
-    "Encourage Rafhy to verify important information independently."
+    f"Encourage {USER_FIRST_NAME} to verify important information independently."
 )
 
 
@@ -426,7 +432,7 @@ def restore_conversation(conv_id: str):
 
 @app.get("/api/weather")
 def get_weather_forecast():
-    """7-day Calgary forecast from Open-Meteo (used by the dashboard widget)."""
+    """7-day local forecast from Open-Meteo (used by the dashboard widget)."""
     return dash_data.get_forecast()
 
 
@@ -687,14 +693,16 @@ def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
         exclude_msg_ids=recent_ids,
     )
 
-    # Inject exact current Calgary time so Gemma can answer time questions accurately
+    # Inject exact current local time so Gemma can answer time questions accurately
     # and judge the freshness of web search results without relying on a search lookup
-    now = datetime.now(ZoneInfo("America/Edmonton"))
+    _tz      = os.getenv("USER_TIMEZONE", "UTC")
+    _loc     = os.getenv("USER_LOCATION_SHORT", CURRENT_LOCATION)
+    now      = datetime.now(ZoneInfo(_tz))
     time_str = now.strftime("%A, %B %d, %Y · %I:%M %p %Z")
     system_parts = [SYSTEM_PROMPT]
 
     system_parts.append(
-        f"\nThe current date and time in Calgary is: {time_str}. "
+        f"\nThe current date and time in {_loc} is: {time_str}. "
         "This is exact and authoritative — do NOT search the web for the current time or date. "
         "Use this value directly when asked."
     )
@@ -748,7 +756,7 @@ async def _execute_tool(name: str, arguments: str) -> str:
         return browsertool.open_url(args.get("url", ""))
 
     if name == "get_weather":
-        return weathertool.get_weather(args.get("location", "Calgary, Alberta"))
+        return weathertool.get_weather(args.get("location", CURRENT_LOCATION))
 
     return f"Unknown tool: {name}"
 

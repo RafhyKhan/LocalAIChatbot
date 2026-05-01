@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 
-const QUOTE_URL = "https://react-http-57c1f-default-rtdb.firebaseio.com/quotes.json";
+const QUOTE_URL = import.meta.env.VITE_QUOTE_URL ?? "";
 
 interface Quote {
   text:   string;

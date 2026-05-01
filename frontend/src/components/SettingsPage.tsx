@@ -98,8 +98,8 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
         <p className="settings-example">
           Example:{" "}
           <em>
-            "Rafhy Khan, 2nd year Software Dev at SAIT, Calgary. Goal: graduate with honours.
-            Morning focus, avoids reading tasks."
+            "{import.meta.env.VITE_USER_NAME || "Your Name"}, 2nd year Computer Science student. Goal: graduate with honours.
+            Morning focus, prefers concise answers."
           </em>
         </p>
 

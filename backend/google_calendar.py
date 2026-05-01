@@ -212,8 +212,8 @@ def create_event(title: str, date: str, start_time: str, end_time: str) -> dict:
     if start_time and end_time:
         body = {
             "summary": title,
-            "start": {"dateTime": f"{date}T{start_time}:00", "timeZone": "America/Edmonton"},
-            "end":   {"dateTime": f"{date}T{end_time}:00",   "timeZone": "America/Edmonton"},
+            "start": {"dateTime": f"{date}T{start_time}:00", "timeZone": os.getenv("USER_TIMEZONE", "UTC")},
+            "end":   {"dateTime": f"{date}T{end_time}:00",   "timeZone": os.getenv("USER_TIMEZONE", "UTC")},
         }
     else:
         body = {

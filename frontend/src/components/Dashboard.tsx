@@ -61,7 +61,7 @@ interface WidgetDef {
 
 /** Master list of every widget the app knows about. */
 const WIDGET_REGISTRY: WidgetDef[] = [
-  { id: "weather",   icon: "🌤",  label: "Weather",   description: "7-day Calgary forecast from Open-Meteo", colSpan: 2 },
+  { id: "weather",   icon: "🌤",  label: "Weather",   description: "7-day local forecast from Open-Meteo", colSpan: 2 },
   { id: "news",      icon: "📰",  label: "BBC News",  description: "Latest headlines from BBC RSS",          colSpan: 1 },
   { id: "bookmarks", icon: "🔖",  label: "Bookmarks", description: "Personal URL bookmarks (localStorage)",  colSpan: 1 },
   { id: "quote",      icon: "💬",  label: "Quote",     description: "Random quote of the day",               colSpan: 1 },
@@ -71,7 +71,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "schedule",    icon: "🗓", label: "Daily Schedule",           description: "Live schedule with current slot tracker", colSpan: 1 },
   { id: "notes",        icon: "📝", label: "Notes",         description: "Persistent scratchpad (auto-saves locally)",  colSpan: 1 },
   { id: "googlesearch", icon: "🔍", label: "Google Search", description: "Quick Google search bar",                      colSpan: 2 },
-  { id: "multinews",   icon: "🌍", label: "World News",    description: "BBC, Reuters, AP, Al Jazeera, CBC, CTV, Calgary Herald", colSpan: 1 },
+  { id: "multinews",   icon: "🌍", label: "World News",    description: "BBC, Reuters, AP, Al Jazeera, CBC, CTV + local news", colSpan: 1 },
   { id: "calendar",    icon: "📅", label: "Google Calendar", description: "Google Calendar events + daily weather + agenda", colSpan: 2 },
   { id: "checkbox",    icon: "✅", label: "Checklist",       description: "10 checkboxes with a persistent completion counter", colSpan: 1 },
 ];
@@ -116,12 +116,14 @@ function loadOrder(): string[] {
 
 // ── Toolbar greeting helpers ──────────────────────────────────────────────────
 
+const _NAME = import.meta.env.VITE_USER_NAME || "there";
+
 function getGreeting(d: Date): string {
   const h = d.getHours();
-  if (h >= 5  && h < 12) return "Good Morning, Rafhy!";
-  if (h >= 12 && h < 17) return "Good Afternoon, Rafhy!";
-  if (h >= 17 && h < 21) return "Good Evening, Rafhy!";
-  return "Good Night, Rafhy!";
+  if (h >= 5  && h < 12) return `Good Morning, ${_NAME}!`;
+  if (h >= 12 && h < 17) return `Good Afternoon, ${_NAME}!`;
+  if (h >= 17 && h < 21) return `Good Evening, ${_NAME}!`;
+  return `Good Night, ${_NAME}!`;
 }
 
 function formatToolbarTime(d: Date): string {
