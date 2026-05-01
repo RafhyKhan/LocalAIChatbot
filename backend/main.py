@@ -17,7 +17,7 @@ Available tools Gemma can call:
 import asyncio
 import json
 import re
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -107,6 +107,10 @@ SYSTEM_PROMPT = (
 class ChatRequest(BaseModel):
     conversation_id: str
     message: str
+
+
+class ProfileData(BaseModel):
+    content: str = ""
 
 
 class WordItem(BaseModel):
@@ -229,6 +233,142 @@ def _save_checklist(state: dict) -> None:
     )
 
 
+# ── Profile helpers (profile.json) ───────────────────────────────────────────
+
+_PROFILE_FILE = Path(__file__).parent / "profile.json"
+
+
+def _load_profile() -> str:
+    if not _PROFILE_FILE.exists():
+        return ""
+    try:
+        return json.loads(_PROFILE_FILE.read_text(encoding="utf-8")).get("content", "")
+    except Exception:
+        return ""
+
+
+def _save_profile(content: str) -> None:
+    _PROFILE_FILE.write_text(
+        json.dumps({"content": content}, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+# ── Jarvis context block builder ──────────────────────────────────────────────
+
+def _build_context_block() -> str:
+    """
+    Assemble a personal context block covering:
+      - User's static profile
+      - Calendar: yesterday + today + 2 days ahead (4 days total)
+      - Checklist: Current/starred (all tasks) + other sections (unchecked only)
+
+    Each source is wrapped in a try/except so a failure in one never breaks the others.
+    """
+    parts = ["=== PERSONAL CONTEXT ==="]
+
+    # ── Profile ───────────────────────────────────────────────────────────────
+    try:
+        profile = _load_profile()
+        if profile.strip():
+            parts.append(f"\n[Profile]\n{profile.strip()}")
+    except Exception:
+        pass
+
+    # ── Calendar ──────────────────────────────────────────────────────────────
+    try:
+        today_dt     = date.today()
+        yesterday_dt = today_dt - timedelta(days=1)
+        tomorrow_dt  = today_dt + timedelta(days=1)
+
+        yesterday_str = yesterday_dt.isoformat()
+        today_str     = today_dt.isoformat()
+        tomorrow_str  = tomorrow_dt.isoformat()
+
+        days = gcal.get_events(days_ahead=4, start_date=yesterday_str)
+
+        for day_data in days:
+            d      = day_data["date"]
+            events = day_data["events"]
+
+            # Friendly day label
+            try:
+                weekday = datetime.fromisoformat(d).strftime("%a %b %d")
+            except Exception:
+                weekday = d
+
+            if d == yesterday_str:
+                label = f"Yesterday — {weekday}"
+            elif d == today_str:
+                label = f"Today — {weekday}"
+            elif d == tomorrow_str:
+                label = f"Tomorrow — {weekday}"
+            else:
+                label = weekday
+
+            # Split agenda note from regular events
+            agenda_note    = None
+            regular_events = []
+            for ev in events:
+                if ev["title"] == "📋 Agenda":
+                    agenda_note = ev.get("desc", "").strip()
+                else:
+                    regular_events.append(ev)
+
+            day_lines = [f"\n[{label}]"]
+
+            for ev in regular_events:
+                if ev["all_day"]:
+                    line = f"  (all day)  {ev['title']}"
+                else:
+                    line = f"  {ev['start']}–{ev['end']}  {ev['title']}"
+                desc = ev.get("desc", "").strip()
+                if desc:
+                    line += f"\n    Notes: {desc}"
+                day_lines.append(line)
+
+            if agenda_note:
+                day_lines.append(f"  📋 Agenda: {agenda_note}")
+
+            if len(day_lines) == 1:
+                day_lines.append("  (nothing scheduled)")
+
+            parts.append("\n".join(day_lines))
+    except Exception:
+        pass
+
+    # ── Checklist ─────────────────────────────────────────────────────────────
+    try:
+        checklist = _load_checklist()
+        for section in checklist.get("sections", []):
+            stype = section.get("type", "custom")
+            title = section.get("title", "Tasks")
+            tasks = section.get("tasks", [])
+
+            if stype == "favourites":
+                # Current/starred: show ALL tasks (checked and unchecked)
+                if not tasks:
+                    continue
+                lines = [f"\n[{title}]"]
+                for t in tasks:
+                    mark = "☑" if t["checked"] else "☐"
+                    lines.append(f"  {mark} {t['label']}")
+                parts.append("\n".join(lines))
+            else:
+                # All other sections: only unchecked tasks
+                unchecked = [t for t in tasks if not t["checked"]]
+                if not unchecked:
+                    continue
+                lines = [f"\n[{title}]"]
+                for t in unchecked:
+                    lines.append(f"  ☐ {t['label']}")
+                parts.append("\n".join(lines))
+    except Exception:
+        pass
+
+    parts.append("\n========================")
+    return "\n".join(parts)
+
+
 def _load_tasks() -> list:
     if not _TASKS_FILE.exists():
         return []
@@ -256,6 +396,12 @@ def create_conversation():
     return conv_store.create_conversation()
 
 
+@app.get("/api/conversations/archived")
+def list_archived():
+    """Return all archived conversations for the Settings archive view."""
+    return conv_store.list_archived_conversations()
+
+
 @app.get("/api/conversations/{conv_id}")
 def get_conversation(conv_id: str):
     data = conv_store.get_conversation(conv_id)
@@ -266,7 +412,15 @@ def get_conversation(conv_id: str):
 
 @app.delete("/api/conversations/{conv_id}")
 def delete_conversation(conv_id: str):
+    """Archive a conversation (hide from sidebar). Nothing is permanently deleted."""
     conv_store.delete_conversation(conv_id)
+    return {"ok": True}
+
+
+@app.post("/api/conversations/{conv_id}/restore")
+def restore_conversation(conv_id: str):
+    """Restore an archived conversation back to the sidebar."""
+    conv_store.restore_conversation(conv_id)
     return {"ok": True}
 
 
@@ -355,6 +509,27 @@ def save_checklist(item: ChecklistStateV2):
     """Persist the full checklist state (sections format) to disk."""
     _save_checklist(item.model_dump())
     return {"ok": True}
+
+
+# ── Profile endpoints ─────────────────────────────────────────────────────────
+
+@app.get("/api/profile")
+def get_profile():
+    """Return the user's personal profile text."""
+    return {"content": _load_profile()}
+
+
+@app.post("/api/profile")
+def save_profile_endpoint(item: ProfileData):
+    """Save the user's personal profile text."""
+    _save_profile(item.content)
+    return {"ok": True}
+
+
+@app.get("/api/context-preview")
+def get_context_preview():
+    """Return the assembled Jarvis context block as it would be injected."""
+    return {"text": _build_context_block()}
 
 
 @app.get("/api/bookmarks")
@@ -498,7 +673,7 @@ async def _generate_title(conv_id: str, user_message: str, assistant_reply: str)
 def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
     """
     Build the starting message list for each request:
-      system prompt → semantic memory snippets → recent conversation → user message
+      system prompt → current time → semantic memory → recent conversation → user message
 
     Web search and calculation are NOT done here — Gemma decides via tool calling.
     """
@@ -516,14 +691,13 @@ def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
     # and judge the freshness of web search results without relying on a search lookup
     now = datetime.now(ZoneInfo("America/Edmonton"))
     time_str = now.strftime("%A, %B %d, %Y · %I:%M %p %Z")
-    system_parts = [
-        SYSTEM_PROMPT,
-        (
-            f"\nThe current date and time in Calgary is: {time_str}. "
-            "This is exact and authoritative — do NOT search the web for the current time or date. "
-            "Use this value directly when asked."
-        ),
-    ]
+    system_parts = [SYSTEM_PROMPT]
+
+    system_parts.append(
+        f"\nThe current date and time in Calgary is: {time_str}. "
+        "This is exact and authoritative — do NOT search the web for the current time or date. "
+        "Use this value directly when asked."
+    )
 
     if relevant:
         snippets = []

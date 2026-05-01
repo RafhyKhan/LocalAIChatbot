@@ -134,16 +134,26 @@ def update_title(conv_id: str, title: str):
 
 def delete_conversation(conv_id: str):
     """
-    Delete a conversation from all three stores:
-      1. SQLite  — cascades to delete all messages for this conversation
-      2. ChromaDB — removes all embeddings for this conversation
-      3. .txt    — deletes the log file from disk
+    Archive a conversation — removes it from the sidebar without deleting anything.
+
+    SQLite row, messages, ChromaDB embeddings, and .txt transcript are all preserved:
+      - SQLite: conversation marked archived=1 (hidden from sidebar, fully restorable)
+      - ChromaDB: embeddings kept — AI retains long-term memory from this conversation
+      - .txt: transcript kept — permanent human-readable archive
+
+    The conversation can be restored from the Settings page at any time.
     """
-    db.delete_conversation(conv_id)          # cascades to messages table
-    memory.delete_conversation(conv_id)      # removes all ChromaDB embeddings
-    path = _txt_path(conv_id)
-    if os.path.exists(path):
-        os.remove(path)
+    db.archive_conversation(conv_id)
+
+
+def list_archived_conversations() -> list[dict]:
+    """Return all archived conversations for the Settings archive view."""
+    return db.list_archived_conversations()
+
+
+def restore_conversation(conv_id: str):
+    """Restore an archived conversation — makes it reappear in the sidebar."""
+    db.restore_conversation(conv_id)
 
 
 def get_recent_messages(conv_id: str, limit: int = 8) -> list[dict]:

@@ -21,9 +21,38 @@ export async function deleteConversation(id: string): Promise<void> {
   await fetch(`${BASE}/api/conversations/${id}`, { method: "DELETE" });
 }
 
+export async function fetchArchivedConversations(): Promise<Conversation[]> {
+  const r = await fetch(`${BASE}/api/conversations/archived`);
+  return r.json();
+}
+
+export async function restoreConversation(id: string): Promise<void> {
+  await fetch(`${BASE}/api/conversations/${id}/restore`, { method: "POST" });
+}
+
 export async function fetchTokens(id: string): Promise<{ used: number; limit: number; remaining: number }> {
   const r = await fetch(`${BASE}/api/conversations/${id}/tokens`);
   return r.json();
+}
+
+export async function fetchProfile(): Promise<string> {
+  const r = await fetch(`${BASE}/api/profile`);
+  const d = await r.json();
+  return d.content ?? "";
+}
+
+export async function saveProfile(content: string): Promise<void> {
+  await fetch(`${BASE}/api/profile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function fetchContextPreview(): Promise<string> {
+  const r = await fetch(`${BASE}/api/context-preview`);
+  const d = await r.json();
+  return d.text ?? "";
 }
 
 export function streamChat(

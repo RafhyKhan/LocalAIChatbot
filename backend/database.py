@@ -41,6 +41,7 @@ def init_db():
     Create the tables if they don't already exist. Safe to call on every startup.
     The foreign key on messages.conversation_id uses ON DELETE CASCADE so that
     deleting a conversation automatically removes all its messages.
+    Also runs a migration to add the `archived` column if upgrading from an older schema.
     """
     conn = get_db()
     conn.executescript("""
@@ -48,7 +49,8 @@ def init_db():
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL DEFAULT 'New Conversation',
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            archived INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,6 +62,12 @@ def init_db():
         );
     """)
     conn.commit()
+    # Migration: add archived column to existing databases that predate this schema
+    try:
+        conn.execute("ALTER TABLE conversations ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists — safe to ignore
     conn.close()
 
 
@@ -89,15 +97,25 @@ def create_conversation(conv_id: str, title: str = "New Conversation") -> dict:
 
 def list_conversations() -> list[dict]:
     """
-    Return all conversations sorted by updated_at descending (most recent first).
+    Return all non-archived conversations sorted by updated_at descending (most recent first).
     This is what populates the sidebar in the frontend.
     """
     conn = get_db()
     rows = conn.execute(
-        "SELECT * FROM conversations ORDER BY updated_at DESC"
+        "SELECT * FROM conversations WHERE archived = 0 ORDER BY updated_at DESC"
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]  # convert Row objects to plain dicts
+
+
+def list_archived_conversations() -> list[dict]:
+    """Return all archived conversations sorted by updated_at descending."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT * FROM conversations WHERE archived = 1 ORDER BY updated_at DESC"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def get_conversation(conv_id: str) -> dict | None:
@@ -118,13 +136,21 @@ def update_title(conv_id: str, title: str):
     conn.close()
 
 
-def delete_conversation(conv_id: str):
+def archive_conversation(conv_id: str):
     """
-    Delete a conversation row. Because of ON DELETE CASCADE, all messages
-    belonging to this conversation are automatically deleted too.
+    Mark a conversation as archived (hidden from sidebar).
+    Nothing is deleted — SQLite row, messages, ChromaDB embeddings, and .txt file all stay intact.
     """
     conn = get_db()
-    conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
+    conn.execute("UPDATE conversations SET archived = 1 WHERE id = ?", (conv_id,))
+    conn.commit()
+    conn.close()
+
+
+def restore_conversation(conv_id: str):
+    """Unarchive a conversation — makes it reappear in the sidebar."""
+    conn = get_db()
+    conn.execute("UPDATE conversations SET archived = 0 WHERE id = ?", (conv_id,))
     conn.commit()
     conn.close()
 

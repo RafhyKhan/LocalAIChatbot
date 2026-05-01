@@ -6,16 +6,18 @@ import {
   fetchConversation,
   deleteConversation,
   fetchTokens,
+  fetchContextPreview,
   streamChat,
 } from "./api";
-import Sidebar    from "./components/Sidebar";
-import Dashboard   from "./components/Dashboard";
-import ChatMessage from "./components/ChatMessage";
-import InputArea   from "./components/InputArea";
+import Sidebar      from "./components/Sidebar";
+import Dashboard     from "./components/Dashboard";
+import ChatMessage   from "./components/ChatMessage";
+import InputArea     from "./components/InputArea";
+import SettingsPage  from "./components/SettingsPage";
 import "./index.css";
 
 export default function App() {
-  const [page, setPage] = useState<"dashboard" | "chat">("dashboard");
+  const [page, setPage] = useState<"dashboard" | "chat" | "settings">("dashboard");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -97,6 +99,12 @@ export default function App() {
     abortRef.current = abort;
   }
 
+  async function handleLiveUpdate() {
+    if (!activeId || streaming) return;
+    const text = await fetchContextPreview();
+    send(text);
+  }
+
   function handleStop() {
     abortRef.current?.();
     abortRef.current = null;
@@ -116,9 +124,13 @@ export default function App() {
         onDelete={deleteConv}
         page={page}
         onPageChange={setPage}
+        onLiveUpdate={handleLiveUpdate}
+        onOpenSettings={() => setPage("settings")}
       />
 
-      {page === "dashboard" ? (
+      {page === "settings" ? (
+        <SettingsPage onBack={() => setPage("dashboard")} />
+      ) : page === "dashboard" ? (
         <Dashboard />
       ) : (
       <main className="chat-main">

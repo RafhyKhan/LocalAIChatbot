@@ -7,8 +7,10 @@ interface Props {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
-  page: "dashboard" | "chat";
-  onPageChange: (p: "dashboard" | "chat") => void;
+  page: "dashboard" | "chat" | "settings";
+  onPageChange: (p: "dashboard" | "chat" | "settings") => void;
+  onLiveUpdate: () => void;
+  onOpenSettings: () => void;
 }
 
 function timeAgo(iso: string): string {
@@ -21,7 +23,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, page, onPageChange }: Props) {
+export default function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, page, onPageChange, onLiveUpdate, onOpenSettings }: Props) {
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
@@ -88,6 +90,21 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
             </button>
           </div>
         ))}
+      </div>
+
+      {/* ── Live Data + Settings ── */}
+      <div className="sidebar-jarvis">
+        <button
+          className="live-update-btn"
+          onClick={onLiveUpdate}
+          disabled={!activeId}
+          title={activeId ? "Send live data update to RainAI" : "Open a conversation first"}
+        >
+          📡 Live Data Update
+        </button>
+        <button className="jarvis-settings-btn" onClick={onOpenSettings}>
+          ⚙ Settings
+        </button>
       </div>
 
       <div className="sidebar-footer">
