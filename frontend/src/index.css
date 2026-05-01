@@ -838,7 +838,95 @@ a { color: inherit; }
   color: #e06c75;
   flex-shrink: 0;
   margin-top: -4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
+.word-add-manual-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.word-add-manual-btn:hover { opacity: 0.8; }
+
+/* Manual entry form */
+.word-manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px;
+  flex-shrink: 0;
+}
+.word-manual-row {
+  display: flex;
+  gap: 6px;
+}
+.word-manual-input {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+  transition: border-color .15s;
+}
+.word-manual-input:focus { border-color: var(--accent); }
+.word-manual-input--word { flex: 2; }
+.word-manual-input--pos  { flex: 1; }
+.word-manual-textarea {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.word-manual-textarea:focus { border-color: var(--accent); }
+.word-manual-textarea::placeholder { color: var(--muted); }
+.word-manual-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+.word-manual-cancel {
+  background: none;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: var(--dim);
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color .15s;
+}
+.word-manual-cancel:hover { color: var(--text); }
+.word-manual-save {
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.word-manual-save:hover:not(:disabled) { opacity: 0.85; }
+.word-manual-save:disabled { opacity: 0.4; cursor: default; }
 
 /* My Words collapsible section */
 .word-list-section { flex-shrink: 0; }

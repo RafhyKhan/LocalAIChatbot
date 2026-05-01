@@ -64,6 +64,13 @@ export default function WordWidget() {
   const [searching,      setSearching]      = useState(false);
   const [searchError,    setSearchError]    = useState(false);
 
+  // Manual entry form (shown when API fails)
+  const [manualOpen,     setManualOpen]     = useState(false);
+  const [manualWord,     setManualWord]     = useState("");
+  const [manualPos,      setManualPos]      = useState("");
+  const [manualDef,      setManualDef]      = useState("");
+  const [manualExample,  setManualExample]  = useState("");
+
   const [saving,         setSaving]         = useState(false);
   const [listOpen,       setListOpen]       = useState(false);
 
@@ -118,7 +125,39 @@ export default function WordWidget() {
     setSearchResult(null);
     setSearchTerm("");
     setSearchError(false);
+    setManualOpen(false);
     inputRef.current?.focus();
+  }
+
+  // ── Manual entry form ─────────────────────────────────────────────────────
+
+  function openManualForm() {
+    setManualWord(searchTerm.trim());
+    setManualPos("");
+    setManualDef("");
+    setManualExample("");
+    setManualOpen(true);
+  }
+
+  function cancelManual() {
+    setManualOpen(false);
+  }
+
+  async function saveManual() {
+    const word = manualWord.trim();
+    const def  = manualDef.trim();
+    if (!word || !def) return;
+    const entry: SavedWord = {
+      word,
+      phonetic:     "",
+      partOfSpeech: manualPos.trim(),
+      definition:   def,
+      example:      manualExample.trim(),
+    };
+    await saveWord(entry);
+    setManualOpen(false);
+    setSearchError(false);
+    setSearchTerm("");
   }
 
   // ── Save word to backend ──────────────────────────────────────────────────
@@ -263,8 +302,57 @@ export default function WordWidget() {
           {searching ? "…" : "Go"}
         </button>
       </div>
-      {searchError && (
-        <p className="word-search-error">Word not found. Try another.</p>
+      {searchError && !manualOpen && (
+        <div className="word-search-error">
+          <span>API doesn't know this word. </span>
+          <button className="word-add-manual-btn" onClick={openManualForm}>
+            Add your own definition →
+          </button>
+        </div>
+      )}
+
+      {/* ── Manual entry form ── */}
+      {manualOpen && (
+        <div className="word-manual-form">
+          <div className="word-manual-row">
+            <input
+              className="word-manual-input word-manual-input--word"
+              placeholder="Word *"
+              value={manualWord}
+              onChange={(e) => setManualWord(e.target.value)}
+            />
+            <input
+              className="word-manual-input word-manual-input--pos"
+              placeholder="Part of speech"
+              value={manualPos}
+              onChange={(e) => setManualPos(e.target.value)}
+            />
+          </div>
+          <textarea
+            className="word-manual-textarea"
+            placeholder="Definition *"
+            value={manualDef}
+            rows={2}
+            onChange={(e) => setManualDef(e.target.value)}
+          />
+          <textarea
+            className="word-manual-textarea"
+            placeholder="Example sentence (optional)"
+            value={manualExample}
+            rows={2}
+            onChange={(e) => setManualExample(e.target.value)}
+          />
+          <div className="word-manual-actions">
+            <button className="word-manual-cancel" onClick={cancelManual}>Cancel</button>
+            <button
+              className="word-manual-save"
+              onClick={saveManual}
+              disabled={saving || !manualWord.trim() || !manualDef.trim()}
+            >
+              {saving ? "Saving…" : "Save Word"}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── My Words collapsible list ── */}
