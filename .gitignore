@@ -21,3 +21,4 @@ RainAI.bat.lnk
 backend/.env.example
 frontend/.env.example
 backend/google_token.json
+frontend/public/overlay/background.jpg

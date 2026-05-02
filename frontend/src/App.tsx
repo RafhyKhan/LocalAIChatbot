@@ -14,10 +14,12 @@ import Dashboard     from "./components/Dashboard";
 import ChatMessage   from "./components/ChatMessage";
 import InputArea     from "./components/InputArea";
 import SettingsPage  from "./components/SettingsPage";
+import Overlay       from "./components/Overlay";
 import "./index.css";
 
 export default function App() {
-  const [page, setPage] = useState<"dashboard" | "chat" | "settings">("dashboard");
+  const [page, setPage]           = useState<"dashboard" | "chat" | "settings">("dashboard");
+  const [overlayVisible, setOverlayVisible] = useState(true); // always starts visible
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -116,6 +118,10 @@ export default function App() {
 
   return (
     <div className="app">
+
+      {/* ── Overlay — always in DOM, CSS transition handles show/hide ── */}
+      <Overlay visible={overlayVisible} onDismiss={() => setOverlayVisible(false)} />
+
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -131,7 +137,7 @@ export default function App() {
       {page === "settings" ? (
         <SettingsPage onBack={() => setPage("dashboard")} />
       ) : page === "dashboard" ? (
-        <Dashboard />
+        <Dashboard onShowOverlay={() => setOverlayVisible(true)} />
       ) : (
       <main className="chat-main">
         {!activeId ? (

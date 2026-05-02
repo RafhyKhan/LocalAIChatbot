@@ -140,7 +140,11 @@ function persistOrder(order: string[]) {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-export default function Dashboard() {
+interface DashboardProps {
+  onShowOverlay: () => void;
+}
+
+export default function Dashboard({ onShowOverlay }: DashboardProps) {
   const [order,         setOrder]         = useState<string[]>(loadOrder);
   const [editMode,      setEditMode]      = useState(false);
   const [dirOpen,       setDirOpen]       = useState(false);
@@ -213,6 +217,13 @@ export default function Dashboard() {
         <div className="toolbar-greeting">
           <span className="toolbar-greeting-text">{getGreeting(now)}</span>
         </div>
+
+        {/* Overlay recall — in toolbar, 20px left of center ── */}
+        <button className="toolbar-overlay-btn" onClick={onShowOverlay} title="Show overlay">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        </button>
 
         {/* Datetime + Buttons — right side */}
         <div className="toolbar-actions">

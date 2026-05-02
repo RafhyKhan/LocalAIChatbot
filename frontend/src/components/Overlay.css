@@ -1,0 +1,168 @@
+/* ── Overlay — full-screen privacy layer ─────────────────────────────────────
+   All overlay styles live here. Nothing in index.css should reference overlay.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Base layer ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000 url("/overlay/background.jpg") center center / cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  transform: translateY(0);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: all;
+}
+
+/* ── Hidden state — slides up off-screen ── */
+.overlay--hidden {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+/* ── Greeting ── */
+.overlay-greeting {
+  font-size: 3.844rem;
+  font-weight: 300;
+  color: #fff;
+  letter-spacing: 0.02em;
+  margin: 0 0 25px;
+  user-select: none;
+  position: relative;
+  top: -150px;
+  background: rgba(0, 0, 0, 0);
+  padding: 10px 32px;
+  border-radius: 12px;
+}
+
+/* ── Weather — pinned 50px from top of screen ── */
+.overlay-weather {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: #aaa;
+  font-size: 1rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.overlay-weather-icon { font-size: 4.5rem; line-height: 1; }
+
+.overlay-weather-temp {
+  color: #fff;
+  font-weight: 300;
+  font-size: 3.2rem;
+  letter-spacing: -0.02em;
+}
+
+.overlay-weather-sep {
+  color: #333;
+  font-size: 2rem;
+}
+
+.overlay-weather-desc {
+  color: #777;
+  font-size: 1.4rem;
+  font-weight: 300;
+}
+
+.overlay-weather-loading {
+  color: #444;
+  font-size: 0.85rem;
+}
+
+/* ── Search bar ── */
+.overlay-search {
+  width: 100%;
+  max-width: 560px;
+  padding: 0 24px;
+  margin-top: -150px;
+  transform: scale(1.5);
+  transform-origin: center;
+}
+
+/* Override widget card styles so search bar blends into the black overlay */
+.overlay-search .widget {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.overlay-search .google-search-input {
+  background: #333;
+  border-color: #333;
+  color: #fff;
+  border-radius: 20px;
+  padding-left: 20px;
+}
+
+.overlay-search .google-search-input::placeholder {
+  color: transparent;
+}
+
+.overlay-search .google-search-input:focus {
+  border-color: #555;
+  border-radius: 20px;
+}
+
+.overlay-search .google-search-btn {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #ccc;
+}
+
+.overlay-search .google-search-btn:hover:not(:disabled) {
+  background: #222;
+  border-color: #555;
+}
+
+.overlay-search .google-bg-toggle {
+  background: #111;
+  border-color: #333;
+  color: #888;
+}
+
+.overlay-search .google-bg-toggle:hover {
+  border-color: #555;
+  color: #ccc;
+}
+
+.overlay-search .google-bg-toggle-on {
+  background: #1a2a1a;
+  border-color: var(--accent, #19c37d);
+  color: var(--accent, #19c37d);
+}
+
+/* ── Dismiss arrow (bottom center) ── */
+.overlay-dismiss-btn {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: transparent;
+  border: 1px solid #222;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.overlay-dismiss-btn:hover {
+  border-color: #555;
+  color: #aaa;
+}
