@@ -265,8 +265,8 @@ def _build_context_block() -> str:
     """
     Assemble a personal context block covering:
       - User's static profile
-      - Calendar: yesterday + today + 2 days ahead (4 days total)
-      - Checklist: Current/starred (all tasks) + other sections (unchecked only)
+      - Calendar: today only (all events + agenda note)
+      - Checklist: Favourites section only (omitted if empty)
 
     Each source is wrapped in a try/except so a failure in one never breaks the others.
     """
@@ -280,36 +280,21 @@ def _build_context_block() -> str:
     except Exception:
         pass
 
-    # ── Calendar ──────────────────────────────────────────────────────────────
+    # ── Calendar (today only) ─────────────────────────────────────────────────
     try:
-        today_dt     = date.today()
-        yesterday_dt = today_dt - timedelta(days=1)
-        tomorrow_dt  = today_dt + timedelta(days=1)
-
-        yesterday_str = yesterday_dt.isoformat()
-        today_str     = today_dt.isoformat()
-        tomorrow_str  = tomorrow_dt.isoformat()
-
-        days = gcal.get_events(days_ahead=4, start_date=yesterday_str)
+        today_str = date.today().isoformat()
+        days      = gcal.get_events(days_ahead=1, start_date=today_str)
 
         for day_data in days:
-            d      = day_data["date"]
+            if day_data["date"] != today_str:
+                continue
+
             events = day_data["events"]
 
-            # Friendly day label
             try:
-                weekday = datetime.fromisoformat(d).strftime("%a %b %d")
+                weekday = datetime.fromisoformat(today_str).strftime("%a %b %d")
             except Exception:
-                weekday = d
-
-            if d == yesterday_str:
-                label = f"Yesterday — {weekday}"
-            elif d == today_str:
-                label = f"Today — {weekday}"
-            elif d == tomorrow_str:
-                label = f"Tomorrow — {weekday}"
-            else:
-                label = weekday
+                weekday = today_str
 
             # Split agenda note from regular events
             agenda_note    = None
@@ -320,7 +305,7 @@ def _build_context_block() -> str:
                 else:
                     regular_events.append(ev)
 
-            day_lines = [f"\n[{label}]"]
+            day_lines = [f"\n[Today — {weekday}]"]
 
             for ev in regular_events:
                 if ev["all_day"]:
@@ -342,32 +327,22 @@ def _build_context_block() -> str:
     except Exception:
         pass
 
-    # ── Checklist ─────────────────────────────────────────────────────────────
+    # ── Checklist (Favourites section only) ───────────────────────────────────
     try:
         checklist = _load_checklist()
         for section in checklist.get("sections", []):
-            stype = section.get("type", "custom")
-            title = section.get("title", "Tasks")
+            if section.get("type") != "favourites":
+                continue
             tasks = section.get("tasks", [])
-
-            if stype == "favourites":
-                # Current/starred: show ALL tasks (checked and unchecked)
-                if not tasks:
-                    continue
-                lines = [f"\n[{title}]"]
-                for t in tasks:
-                    mark = "☑" if t["checked"] else "☐"
-                    lines.append(f"  {mark} {t['label']}")
-                parts.append("\n".join(lines))
-            else:
-                # All other sections: only unchecked tasks
-                unchecked = [t for t in tasks if not t["checked"]]
-                if not unchecked:
-                    continue
-                lines = [f"\n[{title}]"]
-                for t in unchecked:
-                    lines.append(f"  ☐ {t['label']}")
-                parts.append("\n".join(lines))
+            if not tasks:
+                break  # Favourites is empty — omit entirely
+            title = section.get("title", "⭐ Favourites")
+            lines = [f"\n[{title}]"]
+            for t in tasks:
+                mark = "☑" if t["checked"] else "☐"
+                lines.append(f"  {mark} {t['label']}")
+            parts.append("\n".join(lines))
+            break
     except Exception:
         pass
 
