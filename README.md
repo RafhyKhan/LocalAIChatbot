@@ -51,3 +51,32 @@ A modular widget grid displayed alongside the chat sidebar.
 - Widget Directory lets you add/remove widgets from the UI without touching code
 - Visibility and layout persist across sessions
 
+
+
+
+
+
+First page, main overlay. Containg search and clean UI.
+
+<img width="2879" height="1445" alt="RainAIStartingOverlay" src="https://github.com/user-attachments/assets/f7f72348-701c-409a-9ac5-a5dd162b2e24" />
+
+
+After pressing the Arrow at the bottom of the overlay, the Dashboard is revealed. The dashboard contains mutiple widgets. 
+> Calender widget: Syncs your google calender and displays events on the widget. Uses weather API to display weather for future 7 days. The "Agenda" button creates a special event on your google calender that saves the text.
+> News Widget: Contains the new articles from mutiple sources using APIs for each one.
+> Checklist Widget: Allows you to create tasks with checkboxes. You can create sections to organize your checklist, and have an faovurite section that displays your checklist even when the app is closed. 
+
+<img width="2879" height="1446" alt="RainAIDashboardScreenshot" src="https://github.com/user-attachments/assets/5c3b93b6-2da7-4a22-b2c0-c162fb5c7fcd" />
+
+
+Widget menu revealed!
+
+<img width="2879" height="1448" alt="RainAIDashboardWidgetMenuScreenshot" src="https://github.com/user-attachments/assets/e125d89b-c30a-40cc-aae6-adf7f05590db" />
+
+
+
+RainAI chat window.
+
+<img width="2873" height="1444" alt="RainAIChat" src="https://github.com/user-attachments/assets/a8850f7b-dcfa-483b-a0a9-a1e742f2a0b2" />
+
+
