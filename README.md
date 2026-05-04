@@ -62,9 +62,10 @@ First page, main overlay. Containg search and clean UI.
 
 
 After pressing the Arrow at the bottom of the overlay, the Dashboard is revealed. The dashboard contains mutiple widgets. 
-> Calender widget: Syncs your google calender and displays events on the widget. Uses weather API to display weather for future 7 days. The "Agenda" button creates a special event on your google calender that saves the text.
-> News Widget: Contains the new articles from mutiple sources using APIs for each one.
-> Checklist Widget: Allows you to create tasks with checkboxes. You can create sections to organize your checklist, and have an faovurite section that displays your checklist even when the app is closed. 
+
+- Calender widget: Syncs your google calender and displays events on the widget. Uses weather API to display weather for future 7 days. The "Agenda" button creates a special event on your google calender that saves the text.
+- News Widget: Contains the new articles from mutiple sources using APIs for each one.
+- Checklist Widget: Allows you to create tasks with checkboxes. You can create sections to organize your checklist, and have an faovurite section that displays your checklist even when the app is closed. 
 
 <img width="2879" height="1446" alt="RainAIDashboardScreenshot" src="https://github.com/user-attachments/assets/5c3b93b6-2da7-4a22-b2c0-c162fb5c7fcd" />
 
