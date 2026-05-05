@@ -2484,6 +2484,29 @@ a { color: inherit; }
 }
 .cal-connect-chip:hover { background: rgba(25, 195, 125, 0.22); }
 
+/* Secondary calendar toggle in header */
+.cal-sait-toggle {
+  background: var(--hover);
+  border: 1px solid var(--sidebar-border);
+  color: var(--muted);
+  border-radius: 7px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.cal-sait-toggle:hover { color: var(--text); border-color: #555; }
+.cal-sait-toggle--on {
+  border-color: rgba(220, 60, 60, 0.6);
+  color: rgba(220, 60, 60, 0.9);
+  background: rgba(220, 60, 60, 0.08);
+}
+.cal-sait-toggle--on:hover {
+  border-color: rgba(220, 60, 60, 0.9);
+  color: rgb(220, 60, 60);
+}
+
 /* "+ Add Event" button in header */
 .cal-add-event-btn {
   background: var(--hover);
@@ -2584,6 +2607,10 @@ a { color: inherit; }
   padding: 3px 5px;
   border-radius: 4px;
   background: rgba(255,255,255,0.03);
+  border: 1px solid transparent;
+}
+.cal-card-event--sait {
+  border-color: rgba(220, 60, 60, 0.5);
 }
 
 .cal-card-event-time {

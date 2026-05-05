@@ -14,6 +14,7 @@ interface CalendarEvent {
   end:     string | null;
   all_day: boolean;
   desc:    string;
+  source?: string;   // "primary" | "sait"
 }
 
 interface CalendarDay {
@@ -97,6 +98,9 @@ export default function CalendarWidget() {
   const [weatherCache,  setWeatherCache]  = useState<Record<string, DayForecast>>(loadWeatherCache);
   const [weekOffset,    setWeekOffset]    = useState(0);
   const [weekLoading,   setWeekLoading]   = useState(false);
+  const [saitVisible,   setSaitVisible]   = useState(() =>
+    localStorage.getItem("rainai_sait_visible") !== "false"
+  );
 
   // Agenda modal
   const [agendaDate,   setAgendaDate]   = useState<string | null>(null);
@@ -237,6 +241,16 @@ export default function CalendarWidget() {
     } catch { /* ignore */ } finally { setAddSaving(false); }
   }
 
+  // ── Secondary calendar toggle ─────────────────────────────────────────────
+
+  function toggleSait() {
+    setSaitVisible(v => {
+      const next = !v;
+      localStorage.setItem("rainai_sait_visible", String(next));
+      return next;
+    });
+  }
+
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const weekDates = getWeekDates(weekOffset);
@@ -256,9 +270,18 @@ export default function CalendarWidget() {
             </a>
           )}
           {connected === true && (
-            <button className="cal-add-event-btn" onClick={() => setAddOpen(true)}>
-              + Add Event
-            </button>
+            <>
+              <button
+                className={`cal-sait-toggle${saitVisible ? " cal-sait-toggle--on" : ""}`}
+                onClick={toggleSait}
+                title={saitVisible ? `Hide ${import.meta.env.VITE_SECONDARY_CALENDAR_LABEL ?? "Secondary"}` : `Show ${import.meta.env.VITE_SECONDARY_CALENDAR_LABEL ?? "Secondary"}`}
+              >
+                {import.meta.env.VITE_SECONDARY_CALENDAR_LABEL ?? "Cal 2"}
+              </button>
+              <button className="cal-add-event-btn" onClick={() => setAddOpen(true)}>
+                + Add Event
+              </button>
+            </>
           )}
           <a
             className="widget-subtitle cal-gcal-link"
@@ -286,7 +309,10 @@ export default function CalendarWidget() {
         {weekDates.map(dateStr => {
           const forecast   = weatherCache[dateStr];
           const allEvs     = allDays[dateStr] ?? [];
-          const visibleEvs = allEvs.filter(ev => ev.title !== "📋 Agenda");
+          const visibleEvs = allEvs.filter(ev =>
+            ev.title !== "📋 Agenda" &&
+            (ev.source !== "sait" || saitVisible)
+          );
           const isToday    = dateStr === TODAY;
 
           return (
@@ -327,9 +353,12 @@ export default function CalendarWidget() {
                 ) : (
                   <div className="cal-card-events">
                     {visibleEvs.map(ev => (
-                      <div key={ev.id} className="cal-card-event">
+                      <div
+                        key={ev.id}
+                        className={`cal-card-event${ev.source === "sait" ? " cal-card-event--sait" : ""}`}
+                      >
                         <span className="cal-card-event-time">
-                          {ev.all_day ? "All day" : fmtTime(ev.start)}
+                          {ev.all_day ? "All day" : ev.end ? `${fmtTime(ev.start)} – ${fmtTime(ev.end)}` : fmtTime(ev.start)}
                         </span>
                         <span className="cal-card-event-title">{ev.title}</span>
                       </div>

@@ -142,12 +142,46 @@ def exchange_code(code: str) -> None:
             pass
 
 
+# ── Secondary calendar lookup ─────────────────────────────────────────────────
+
+_secondary_calendar_id: str | None = None   # cached after first successful lookup
+
+def _find_secondary_calendar_id(service) -> str | None:
+    """
+    Search the user's calendar list for the calendar named by the
+    SECONDARY_CALENDAR_NAME env variable (case-insensitive).
+    Returns the calendar ID or None if not found or not configured.
+    Result is cached in the module-level variable after first lookup.
+    """
+    global _secondary_calendar_id
+    if _secondary_calendar_id is not None:
+        return _secondary_calendar_id
+    target = os.getenv("SECONDARY_CALENDAR_NAME", "").strip().lower()
+    if not target:
+        return None
+    try:
+        page_token = None
+        while True:
+            resp = service.calendarList().list(pageToken=page_token).execute()
+            for cal in resp.get("items", []):
+                if cal.get("summary", "").strip().lower() == target:
+                    _secondary_calendar_id = cal["id"]
+                    return _secondary_calendar_id
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+    except Exception:
+        pass
+    return None
+
+
 # ── Events ────────────────────────────────────────────────────────────────────
 
 def get_events(days_ahead: int = 7, start_date: str | None = None) -> list:
     """
     Return per-day event lists for start_date through start_date + days_ahead.
     If start_date is omitted, defaults to today.
+    Each event includes a 'source' field: 'primary' or 'sait'.
     """
     service = _get_service()
     if not service:
@@ -165,40 +199,53 @@ def get_events(days_ahead: int = 7, start_date: str | None = None) -> list:
 
     end = start + timedelta(days=days_ahead)
 
-    try:
-        result = service.events().list(
-            calendarId="primary",
-            timeMin=start.isoformat(),
-            timeMax=end.isoformat(),
-            singleEvents=True,
-            orderBy="startTime",
-            maxResults=200,
-        ).execute()
-    except Exception:
-        return []
-
     # Build per-day buckets
     days: dict[str, list] = {
         (start + timedelta(days=i)).strftime("%Y-%m-%d"): []
         for i in range(days_ahead)
     }
 
-    for ev in result.get("items", []):
-        ev_start = ev.get("start", {})
-        date_str = ev_start.get("date") or ev_start.get("dateTime", "")[:10]
-        if date_str not in days:
-            continue
-        all_day = "date" in ev_start
-        start_t = None if all_day else ev_start.get("dateTime", "")[11:16]
-        end_t   = None if all_day else ev.get("end", {}).get("dateTime", "")[11:16]
-        days[date_str].append({
-            "id":      ev.get("id", ""),
-            "title":   ev.get("summary", "(No title)"),
-            "start":   start_t,
-            "end":     end_t,
-            "all_day": all_day,
-            "desc":    ev.get("description", ""),
-        })
+    def _fetch_calendar(cal_id: str, source: str) -> None:
+        try:
+            result = service.events().list(
+                calendarId=cal_id,
+                timeMin=start.isoformat(),
+                timeMax=end.isoformat(),
+                singleEvents=True,
+                orderBy="startTime",
+                maxResults=200,
+            ).execute()
+            for ev in result.get("items", []):
+                ev_start = ev.get("start", {})
+                date_str = ev_start.get("date") or ev_start.get("dateTime", "")[:10]
+                if date_str not in days:
+                    continue
+                all_day = "date" in ev_start
+                start_t = None if all_day else ev_start.get("dateTime", "")[11:16]
+                end_t   = None if all_day else ev.get("end", {}).get("dateTime", "")[11:16]
+                days[date_str].append({
+                    "id":      ev.get("id", ""),
+                    "title":   ev.get("summary", "(No title)"),
+                    "start":   start_t,
+                    "end":     end_t,
+                    "all_day": all_day,
+                    "desc":    ev.get("description", ""),
+                    "source":  source,
+                })
+        except Exception:
+            pass
+
+    # Fetch primary calendar
+    _fetch_calendar("primary", "primary")
+
+    # Fetch secondary calendar (if configured and found)
+    secondary_id = _find_secondary_calendar_id(service)
+    if secondary_id:
+        _fetch_calendar(secondary_id, "sait")
+
+    # Sort each day's events by start time (all-day events first)
+    for date_str in days:
+        days[date_str].sort(key=lambda e: (0 if e["all_day"] else 1, e["start"] or ""))
 
     return [{"date": d, "events": evs} for d, evs in days.items()]
 
