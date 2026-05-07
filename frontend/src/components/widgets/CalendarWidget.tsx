@@ -99,7 +99,7 @@ export default function CalendarWidget() {
   const [weekOffset,    setWeekOffset]    = useState(0);
   const [weekLoading,   setWeekLoading]   = useState(false);
   const [saitVisible,   setSaitVisible]   = useState(() =>
-    localStorage.getItem("rainai_sait_visible") !== "false"
+    localStorage.getItem("rainai_sait_visible") === "true"
   );
 
   // Agenda modal

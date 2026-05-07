@@ -35,6 +35,27 @@ export default function App() {
   useEffect(() => { loadList(); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamText]);
 
+  // ── Idle overlay ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const minutes = parseFloat(import.meta.env.VITE_IDLE_TIMEOUT_MINUTES ?? "5");
+    const ms      = minutes * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout>;
+
+    function resetTimer() {
+      clearTimeout(timer);
+      timer = setTimeout(() => setOverlayVisible(true), ms);
+    }
+
+    const events = ["mousemove", "keydown", "mousedown", "touchstart", "scroll"];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer(); // start the timer on mount
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+    };
+  }, []);
+
   async function loadList() {
     setConversations(await fetchConversations());
   }
