@@ -29,7 +29,7 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
 
 import conversations as conv_store
@@ -74,10 +74,10 @@ app.add_middleware(
 db.init_db()
 
 client = AsyncOpenAI(
-    base_url="http://localhost:12434/v1",
+    base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:12434/v1"),
     api_key="not-needed",
 )
-MODEL = "docker.io/ai/gemma4:E2B"
+MODEL = os.getenv("MODEL_NAME", "docker.io/ai/gemma4:E2B")
 
 
 @app.get("/api/health")
@@ -140,53 +140,53 @@ SYSTEM_PROMPT = (
 
 
 class ChatRequest(BaseModel):
-    conversation_id: str
-    message: str
+    conversation_id: str = Field(max_length=64)
+    message:         str = Field(max_length=32_768)
 
 
 class ProfileData(BaseModel):
-    content: str = ""
+    content: str = Field(default="", max_length=500)
 
 
 class WordItem(BaseModel):
-    word:         str
-    phonetic:     str = ""
-    partOfSpeech: str = ""
-    definition:   str = ""
-    example:      str = ""
+    word:         str = Field(max_length=100)
+    phonetic:     str = Field(default="", max_length=100)
+    partOfSpeech: str = Field(default="", max_length=50)
+    definition:   str = Field(default="", max_length=1_000)
+    example:      str = Field(default="", max_length=500)
 
 
 class TaskItem(BaseModel):
-    label:    str
-    category: str  # "work" | "activity" | "eat" | "read" | "workout"
+    label:    str = Field(max_length=200)
+    category: str = Field(max_length=20)  # "work" | "activity" | "eat" | "read" | "workout"
 
 
 class CalendarEventItem(BaseModel):
-    title: str
-    date:  str          # "YYYY-MM-DD"
-    start: str = ""     # "HH:MM" or empty for all-day
-    end:   str = ""     # "HH:MM" or empty for all-day
+    title: str = Field(max_length=200)
+    date:  str = Field(max_length=10)   # "YYYY-MM-DD"
+    start: str = Field(default="", max_length=5)   # "HH:MM" or empty for all-day
+    end:   str = Field(default="", max_length=5)   # "HH:MM" or empty for all-day
 
 
 class AgendaItem(BaseModel):
-    date: str   # "YYYY-MM-DD"
-    text: str
+    date: str = Field(max_length=10)    # "YYYY-MM-DD"
+    text: str = Field(max_length=10_000)
 
 
 class ChecklistTaskItem(BaseModel):
-    id:      str
-    label:   str
+    id:      str  = Field(max_length=64)
+    label:   str  = Field(max_length=200)
     checked: bool
 
 class ChecklistSectionItem(BaseModel):
-    id:    str
-    type:  str   # "favourites" | "unsorted" | "custom"
-    title: str
+    id:    str  = Field(max_length=64)
+    type:  str  = Field(max_length=20)  # "favourites" | "unsorted" | "custom"
+    title: str  = Field(max_length=100)
     tasks: list[ChecklistTaskItem]
 
 class ChecklistStateV2(BaseModel):
-    sections: list[ChecklistSectionItem]
-    lifetime: int
+    sections: list[ChecklistSectionItem] = Field(max_length=50)
+    lifetime: int = Field(ge=0)
 
 
 # ── Word list helpers (words.json) ────────────────────────────────────────────

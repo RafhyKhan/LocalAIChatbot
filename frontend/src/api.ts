@@ -1,6 +1,6 @@
 import type { Conversation, ConversationDetail } from "./types";
 
-export const BASE = "http://localhost:8000";
+export const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export async function fetchConversations(): Promise<Conversation[]> {
   const r = await fetch(`${BASE}/api/conversations`);
