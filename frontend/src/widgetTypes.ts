@@ -17,7 +17,7 @@ export interface NewsData {
   source: string;
 }
 
-/** A quote with attribution — used by QuoteWidget and GreetingWidget. */
+/** A quote with attribution — used by QuoteWidget. */
 export interface Quote {
   text:   string;
   author: string;

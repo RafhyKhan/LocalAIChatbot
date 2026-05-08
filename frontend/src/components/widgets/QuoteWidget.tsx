@@ -1,6 +1,7 @@
 /**
  * QuoteWidget — random quote from Firebase, colSpan 1.
- * Spun off from GreetingWidget. The greeting + clock now live in the toolbar.
+ * Fetches from VITE_QUOTE_URL (expects a Firebase object keyed by push IDs).
+ * The greeting + clock live in the Dashboard toolbar.
  */
 import "./QuoteWidget.css";
 import { useEffect, useState } from "react";

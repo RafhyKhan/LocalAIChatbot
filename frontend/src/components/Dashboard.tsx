@@ -109,7 +109,8 @@ function loadOrder(): string[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Migrate: old "greeting" (colSpan 2) → new "quote" (colSpan 1)
+        // One-time migration: "greeting" widget was replaced by "quote" (colSpan 1).
+        // Users who had it saved in localStorage get "quote" instead.
         return parsed.map((id: string) => id === "greeting" ? "quote" : id);
       }
     }

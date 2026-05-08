@@ -93,7 +93,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
       </div>
 
       {/* ── Live Data + Settings ── */}
-      <div className="sidebar-jarvis">
+      <div className="sidebar-actions">
         <button
           className="live-update-btn"
           onClick={onLiveUpdate}
@@ -102,7 +102,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
         >
           📡 Live Data Update
         </button>
-        <button className="jarvis-settings-btn" onClick={onOpenSettings}>
+        <button className="settings-btn" onClick={onOpenSettings}>
           ⚙ Settings
         </button>
       </div>
