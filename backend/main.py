@@ -19,6 +19,7 @@ load_dotenv()
 
 import asyncio
 import json
+import logging
 import os
 import re
 from datetime import datetime, date, timedelta
@@ -43,6 +44,24 @@ import weathertool
 import dashboard as dash_data
 import google_calendar as gcal
 
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+_LOG_DIR = Path(__file__).parent / "logs"
+_LOG_DIR.mkdir(exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
+    handlers=[
+        logging.FileHandler(_LOG_DIR / "app.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+logger = logging.getLogger(__name__)
+logger.info("RainAI backend starting up")
+
+# ── App ───────────────────────────────────────────────────────────────────────
+
 app = FastAPI()
 
 app.add_middleware(
@@ -59,6 +78,16 @@ client = AsyncOpenAI(
     api_key="not-needed",
 )
 MODEL = "docker.io/ai/gemma4:E2B"
+
+
+@app.get("/api/health")
+def health():
+    """Quick liveness check — returns 200 when the backend is running."""
+    return {
+        "status": "ok",
+        "model":  MODEL,
+        "timestamp": datetime.now().isoformat(),
+    }
 
 #The recent window, is its direct memory. Token usage has to fit the RECENTMEMORY number of messages.
 RECENT_WINDOW = 80
@@ -561,15 +590,15 @@ def calendar_callback(code: str, state: str = ""):
   </div>
   <script>setTimeout(()=>window.close(),1500);</script>
 </body></html>"""
-    except Exception as exc:
-        html = f"""<!doctype html>
+    except Exception:
+        logger.exception("OAuth callback failed")
+        html = """<!doctype html>
 <html><head><title>Error</title></head>
 <body style="font-family:sans-serif;background:#212121;color:#ececec;
              display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
   <div style="text-align:center">
     <div style="font-size:48px;margin-bottom:12px">❌</div>
     <p style="font-size:18px;font-weight:600">Connection failed</p>
-    <p style="color:#8e8ea0;margin-top:6px">{exc}</p>
     <p style="color:#8e8ea0;margin-top:6px">Close this tab and try again.</p>
   </div>
 </body></html>"""
@@ -875,6 +904,7 @@ async def chat(req: ChatRequest, request: Request):
             yield f"data: {json.dumps({'done': True, 'sources': all_sources})}\n\n"
 
         except Exception as e:
+            logger.exception("Error during chat stream for conversation %s", req.conversation_id)
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")

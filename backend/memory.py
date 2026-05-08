@@ -17,10 +17,13 @@ Full pipeline per search() call:
   6. Return top N after reranking to main.py for context injection.
 """
 
+import logging
 import os
 import chromadb
 from sentence_transformers import SentenceTransformer
 from flashrank import Ranker, RerankRequest
+
+logger = logging.getLogger(__name__)
 
 # ChromaDB stores its index on disk so embeddings survive server restarts
 CHROMA_DIR   = os.path.join(os.path.dirname(__file__), "chroma_db")
@@ -41,7 +44,9 @@ def _get_embed_model() -> SentenceTransformer:
     """Lazy-load the bi-encoder. Downloads the model on first call (~80 MB)."""
     global _embed_model
     if _embed_model is None:
+        logger.info("Loading bi-encoder model: %s", EMBED_MODEL)
         _embed_model = SentenceTransformer(EMBED_MODEL)
+        logger.info("Bi-encoder loaded")
     return _embed_model
 
 
@@ -49,7 +54,9 @@ def _get_ranker() -> Ranker:
     """Lazy-load the FlashRank cross-encoder. Downloads on first call."""
     global _ranker
     if _ranker is None:
+        logger.info("Loading FlashRank reranker: %s", RERANK_MODEL)
         _ranker = Ranker(model_name=RERANK_MODEL)
+        logger.info("FlashRank reranker loaded")
     return _ranker
 
 

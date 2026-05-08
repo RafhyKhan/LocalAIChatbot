@@ -13,9 +13,12 @@ whose verifier still exists on disk.
 
 import base64
 import hashlib
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -57,6 +60,7 @@ def _load_creds() -> Credentials | None:
             _save_creds(creds)
         return creds if creds and creds.valid else None
     except Exception:
+        logger.warning("Failed to load or refresh Google credentials", exc_info=True)
         return None
 
 
@@ -171,7 +175,7 @@ def _find_secondary_calendar_id(service) -> str | None:
             if not page_token:
                 break
     except Exception:
-        pass
+        logger.warning("Failed to look up secondary calendar '%s'", target, exc_info=True)
     return None
 
 
@@ -233,7 +237,7 @@ def get_events(days_ahead: int = 7, start_date: str | None = None) -> list:
                     "source":  source,
                 })
         except Exception:
-            pass
+            logger.warning("Failed to fetch events from calendar '%s'", cal_id, exc_info=True)
 
     # Fetch primary calendar
     _fetch_calendar("primary", "primary")

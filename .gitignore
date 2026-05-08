@@ -20,8 +20,8 @@ frontend/.env
 RainAI.bat.lnk
 backend/.env.example
 frontend/.env.example
-backend/google_token.json
 frontend/public/overlay/background.jpg
 frontend/public/overlay/background3.jpg
 backend/_auth_url.txt
 backend/_code_verifier.txt
+backend/logs/
