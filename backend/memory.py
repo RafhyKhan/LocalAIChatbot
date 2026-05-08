@@ -17,6 +17,7 @@ Full pipeline per search() call:
   6. Return top N after reranking to main.py for context injection.
 """
 
+import hashlib
 import logging
 import os
 import chromadb
@@ -24,6 +25,13 @@ from sentence_transformers import SentenceTransformer
 from flashrank import Ranker, RerankRequest
 
 logger = logging.getLogger(__name__)
+
+# ── Embedding cache ───────────────────────────────────────────────────────────
+# MD5-keyed dict: avoids re-encoding the same text on repeated calls.
+# Especially helpful for short recurring messages ("yes", "ok", "thanks")
+# and repeated query embeddings during back-to-back searches.
+
+_embed_cache: dict[str, list[float]] = {}
 
 # ChromaDB stores its index on disk so embeddings survive server restarts
 CHROMA_DIR   = os.path.join(os.path.dirname(__file__), "chroma_db")
@@ -60,6 +68,14 @@ def _get_ranker() -> Ranker:
     return _ranker
 
 
+def _embed(text: str) -> list[float]:
+    """Return the embedding for text, using the in-memory cache to avoid re-encoding."""
+    key = hashlib.md5(text.encode("utf-8", errors="replace")).hexdigest()
+    if key not in _embed_cache:
+        _embed_cache[key] = _get_embed_model().encode(text, show_progress_bar=False).tolist()
+    return _embed_cache[key]
+
+
 def _get_collection():
     """Lazy-load the ChromaDB collection. Creates it if it doesn't exist yet."""
     global _collection
@@ -81,7 +97,7 @@ def add_message(conv_id: str, msg_id: int, role: str, content: str):
     so we can exclude recent messages from search results later.
     """
     col = _get_collection()
-    embedding = _get_embed_model().encode(content, show_progress_bar=False).tolist()
+    embedding = _embed(content)
     col.add(
         ids=[f"{conv_id}_{msg_id}"],       # unique doc ID across all conversations
         embeddings=[embedding],             # pre-computed bi-encoder vector
@@ -118,7 +134,7 @@ def search(query: str, n_results: int = 5, exclude_msg_ids: set | None = None) -
     # Embed the query with the bi-encoder, then ask ChromaDB for approximate
     # nearest neighbours. We fetch n_results*5 so we have plenty of candidates
     # to filter and rerank down to n_results.
-    embedding = _get_embed_model().encode(query, show_progress_bar=False).tolist()
+    embedding = _embed(query)
     fetch = min(col.count(), n_results * 5)  # don't ask for more than exist
     results = col.query(query_embeddings=[embedding], n_results=fetch)
 

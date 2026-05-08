@@ -7,11 +7,34 @@ structure so the frontend widget degrades gracefully without crashing.
 """
 
 import json
+import logging
 import os
 import re
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+# ── TTL cache ─────────────────────────────────────────────────────────────────
+# Keyed by string, value is (fetched_at_monotonic, result_dict).
+# Avoids hammering external APIs on every widget load.
+
+_cache: dict[str, tuple[float, dict]] = {}
+
+
+def _cached(key: str, ttl_seconds: float, fetch_fn) -> dict:
+    """Return a cached result if still fresh; otherwise call fetch_fn() and cache it."""
+    now = time.monotonic()
+    if key in _cache:
+        ts, result = _cache[key]
+        if now - ts < ttl_seconds:
+            return result
+    result = fetch_fn()
+    _cache[key] = (now, result)
+    logger.debug("Cache miss — refreshed '%s'", key)
+    return result
 
 # ── Weather (Open-Meteo, no API key required) ─────────────────────────────────
 # Coordinates and display name loaded from backend/.env
@@ -52,7 +75,12 @@ _WMO_DESC = {
 
 
 def get_forecast() -> dict:
-    """Return a 7-day daily forecast from Open-Meteo for the configured location."""
+    """Return a 7-day daily forecast, cached for 10 minutes."""
+    return _cached("forecast", 600, _fetch_forecast)
+
+
+def _fetch_forecast() -> dict:
+    """Fetch live 7-day daily forecast from Open-Meteo."""
     tz_encoded = _TIMEZONE.replace("/", "%2F")
     url = (
         "https://api.open-meteo.com/v1/forecast"
@@ -96,7 +124,12 @@ BBC_RSS = "https://feeds.bbci.co.uk/news/rss.xml"
 
 
 def get_news() -> dict:
-    """Return the latest BBC News headlines from their RSS feed.
+    """Return BBC News headlines, cached for 1 hour."""
+    return _cached("news_bbc", 3600, _fetch_news)
+
+
+def _fetch_news() -> dict:
+    """Fetch live BBC News headlines from their RSS feed.
     Returns an empty items list (not an error) if the feed is unreachable,
     so the widget simply shows nothing rather than an error state.
     """
@@ -143,7 +176,12 @@ _NS = {"media": "http://search.yahoo.com/mrss/", "dc": "http://purl.org/dc/eleme
 
 
 def get_multi_news(source: str) -> dict:
-    """Fetch RSS headlines for a given source key. Returns [] on failure."""
+    """Return RSS headlines for a source key, cached per-source for 1 hour."""
+    return _cached(f"multinews:{source}", 3600, lambda: _fetch_multi_news(source))
+
+
+def _fetch_multi_news(source: str) -> dict:
+    """Fetch live RSS headlines for a given source key. Returns [] on failure."""
     url = _NEWS_SOURCES.get(source)
     if not url:
         return {"items": [], "source": source}
@@ -191,7 +229,12 @@ def _strip_html(text: str) -> str:
 
 
 def get_philosopher() -> dict:
-    """Return the 3 most recent Philosopher of the Month posts from OUP Blog RSS.
+    """Return OUP philosopher posts, cached for 24 hours."""
+    return _cached("philosopher", 86400, _fetch_philosopher)
+
+
+def _fetch_philosopher() -> dict:
+    """Fetch live Philosopher of the Month posts from OUP Blog RSS.
     Returns an empty items list if the feed is unreachable.
     """
     try:
