@@ -115,7 +115,11 @@ export default function CalendarWidget() {
   const [newEnd,    setNewEnd]    = useState("");
   const [addSaving, setAddSaving] = useState(false);
 
+  const [agendaError, setAgendaError] = useState("");
+  const [addError,    setAddError]    = useState("");
+
   const pollRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollAttempts   = useRef(0);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const weekOffsetRef  = useRef(0); // stable ref so callbacks don't go stale
 
@@ -131,7 +135,9 @@ export default function CalendarWidget() {
         (data.days ?? []).forEach((d: CalendarDay) => { map[d.date] = d.events; });
         setAllDays(map);
       }
-    } catch { /* ignore */ } finally {
+    } catch (err) {
+      console.error("[CalendarWidget] fetchWeekEvents failed:", err);
+    } finally {
       setWeekLoading(false);
     }
   }, []);
@@ -139,6 +145,12 @@ export default function CalendarWidget() {
   // ── Auth check + polling ──────────────────────────────────────────────────
 
   const checkAuth = useCallback(async () => {
+    // Stop polling after 40 attempts (~2 minutes at 3s interval)
+    pollAttempts.current += 1;
+    if (pollAttempts.current > 40) {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      return;
+    }
     try {
       const r    = await fetch(`${BASE}/api/calendar/auth`);
       const data = await r.json();
@@ -148,7 +160,9 @@ export default function CalendarWidget() {
         if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
         fetchWeekEvents(getWeekDates(weekOffsetRef.current)[0]);
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error("[CalendarWidget] checkAuth failed:", err);
+    }
   }, [fetchWeekEvents]);
 
   // ── Mount ─────────────────────────────────────────────────────────────────
@@ -212,6 +226,7 @@ export default function CalendarWidget() {
   async function saveAgenda() {
     if (!agendaDate) return;
     setAgendaSaving(true);
+    setAgendaError("");
     try {
       await fetch(`${BASE}/api/calendar/agenda`, {
         method:  "POST",
@@ -220,7 +235,10 @@ export default function CalendarWidget() {
       });
       setAgendaDate(null);
       fetchWeekEvents(getWeekDates(weekOffsetRef.current)[0]);
-    } catch { /* ignore */ } finally { setAgendaSaving(false); }
+    } catch (err) {
+      console.error("[CalendarWidget] saveAgenda failed:", err);
+      setAgendaError("Save failed — check your connection.");
+    } finally { setAgendaSaving(false); }
   }
 
   // ── Add Event modal ───────────────────────────────────────────────────────
@@ -238,7 +256,10 @@ export default function CalendarWidget() {
       setAddOpen(false);
       setNewTitle(""); setNewStart(""); setNewEnd("");
       fetchWeekEvents(getWeekDates(weekOffsetRef.current)[0]);
-    } catch { /* ignore */ } finally { setAddSaving(false); }
+    } catch (err) {
+      console.error("[CalendarWidget] saveEvent failed:", err);
+      setAddError("Save failed — check your connection.");
+    } finally { setAddSaving(false); }
   }
 
   // ── Secondary calendar toggle ─────────────────────────────────────────────
@@ -402,6 +423,7 @@ export default function CalendarWidget() {
               autoFocus
             />
             <div className="cal-modal-footer">
+              {agendaError && <span className="cal-modal-error">{agendaError}</span>}
               <button className="cal-modal-cancel" onClick={() => setAgendaDate(null)}>Cancel</button>
               <button className="cal-modal-save" onClick={saveAgenda} disabled={agendaSaving}>
                 {agendaSaving ? "Saving…" : "Save to Calendar"}
@@ -443,6 +465,7 @@ export default function CalendarWidget() {
               <p className="cal-modal-hint">Leave start/end empty for an all-day event.</p>
             </div>
             <div className="cal-modal-footer">
+              {addError && <span className="cal-modal-error">{addError}</span>}
               <button type="button" className="cal-modal-cancel" onClick={() => setAddOpen(false)}>Cancel</button>
               <button type="submit" className="cal-modal-save" disabled={addSaving}>
                 {addSaving ? "Saving…" : "Add to Calendar"}

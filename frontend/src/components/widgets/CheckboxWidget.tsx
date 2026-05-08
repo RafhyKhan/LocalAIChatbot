@@ -365,8 +365,10 @@ export default function CheckboxWidget() {
   const [activeType,  setActiveType]  = useState<string | null>(null);
 
   const syncedRef    = useRef(false);
-  const sectionsRef  = useRef<Section[]>([]);  // stable ref for drag handlers
+  const sectionsRef  = useRef<Section[]>([]);  // stable ref for drag handlers and beforeunload
+  const lifetimeRef  = useRef(0);              // stable ref for beforeunload flush
   sectionsRef.current = sections;
+  lifetimeRef.current = lifetime;
 
   // ── Backend load ───────────────────────────────────────────────────────────
 
@@ -379,7 +381,7 @@ export default function CheckboxWidget() {
           setLifetime(data.lifetime ?? 0);
         }
       })
-      .catch(() => {})
+      .catch((err) => { console.error("[CheckboxWidget] Failed to load checklist:", err); })
       .finally(() => { syncedRef.current = true; });
   }, []);
 
@@ -392,10 +394,27 @@ export default function CheckboxWidget() {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ sections, lifetime }),
-      }).catch(() => {});
+      }).catch((err) => { console.error("[CheckboxWidget] Sync failed:", err); });
     }, 400);
     return () => clearTimeout(t);
   }, [sections, lifetime]);
+
+  // ── Beforeunload flush — saves any pending debounced changes before tab close ──
+
+  useEffect(() => {
+    function flushNow() {
+      if (!syncedRef.current) return;
+      navigator.sendBeacon(
+        `${BASE}/api/checklist`,
+        new Blob(
+          [JSON.stringify({ sections: sectionsRef.current, lifetime: lifetimeRef.current })],
+          { type: "application/json" }
+        )
+      );
+    }
+    window.addEventListener("beforeunload", flushNow);
+    return () => window.removeEventListener("beforeunload", flushNow);
+  }, []);
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
