@@ -3,6 +3,7 @@
  * Click a source name to expand its RSS headlines.
  * Click again to collapse. Only one source open at a time.
  */
+import "./MultiNewsWidget.css";
 import { useState } from "react";
 import { BASE } from "../../api";
 import type { NewsItem } from "../../widgetTypes";

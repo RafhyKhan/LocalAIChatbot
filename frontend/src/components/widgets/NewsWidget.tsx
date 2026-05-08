@@ -3,6 +3,7 @@
  * If BBC is unreachable the widget renders nothing (no error shown).
  * Self-contained: fetches its own data, handles loading + empty states.
  */
+import "./NewsWidget.css";
 import { useEffect, useState } from "react";
 import { BASE } from "../../api";
 import type { NewsItem, NewsData } from "../../widgetTypes";

@@ -1,0 +1,27 @@
+.fact-widget { justify-content: space-between; }
+
+.fact-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.fact-content {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.65;
+  flex: 1;
+  white-space: pre-wrap;  /* preserves poetry line breaks */
+}
+
+.fact-source {
+  display: block;
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 12px;
+  flex-shrink: 0;
+}

@@ -3,6 +3,7 @@
  * No backend, no AI. Paste a URL, press Add (or Enter), it persists forever.
  * Self-contained: all state lives in this component + localStorage.
  */
+import "./BookmarksWidget.css";
 import { useState } from "react";
 
 interface Bookmark {

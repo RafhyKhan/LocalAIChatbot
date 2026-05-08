@@ -4,6 +4,7 @@
  * Weather is cached in localStorage (keyed by date) so past/future
  * weeks show historical data if the user visited that week before.
  */
+import "./CalendarWidget.css";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { BASE } from "../../api";
 

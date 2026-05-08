@@ -10,6 +10,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import "./GreetingWidget.css";
 import { useEffect, useState } from "react";
 import type { Quote } from "../../widgetTypes";
 

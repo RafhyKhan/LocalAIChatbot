@@ -11,6 +11,7 @@
  * All words persisted in backend/words.json via the FastAPI endpoints.
  */
 
+import "./WordWidget.css";
 import { useEffect, useRef, useState } from "react";
 import { BASE } from "../../api";
 

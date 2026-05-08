@@ -1,0 +1,20 @@
+.news-widget { overflow: hidden; }
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  flex: 1;
+}
+.news-list::-webkit-scrollbar { width: 3px; }
+.news-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+.news-item {
+  display: block;
+  padding: 7px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background .12s;
+}
+.news-item:hover { background: var(--hover); }
+.news-title { font-size: 13px; color: var(--text); line-height: 1.4; }

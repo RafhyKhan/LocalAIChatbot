@@ -17,6 +17,7 @@
  * +10 button — draggable. Drop on a section body to add 10 tasks. Green highlight on hover.
  *              Cannot drop on Favourites.
  */
+import "./CheckboxWidget.css";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { BASE } from "../../api";
 import {

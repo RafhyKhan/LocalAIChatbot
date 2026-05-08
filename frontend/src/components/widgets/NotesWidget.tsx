@@ -4,6 +4,7 @@
  * browser restarts, and computer restarts.
  * Auto-saves 500ms after you stop typing.
  */
+import "./NotesWidget.css";
 import { useState, useRef, useCallback } from "react";
 
 const STORAGE_KEY = "rainai_notes";

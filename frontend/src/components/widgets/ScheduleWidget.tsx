@@ -16,6 +16,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import "./ScheduleWidget.css";
 import { useEffect, useRef, useState } from "react";
 import { BASE } from "../../api";
 

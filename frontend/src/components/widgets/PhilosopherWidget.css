@@ -1,0 +1,63 @@
+.phil-source-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 11px;
+}
+.phil-source-link:hover { text-decoration: underline; }
+
+.phil-latest {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  background: var(--hover);
+  border: 1px solid var(--sidebar-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  text-decoration: none;
+  transition: background .12s;
+  flex-shrink: 0;
+}
+.phil-latest:hover { background: var(--active); }
+
+.phil-date {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--accent);
+}
+.phil-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+.phil-excerpt {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.phil-previous { margin-top: 12px; }
+.phil-previous-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.phil-prev-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background .12s;
+}
+.phil-prev-item:hover { background: var(--hover); }
+.phil-prev-date  { font-size: 10px; color: var(--dim); }
+.phil-prev-title { font-size: 12px; color: var(--text); line-height: 1.4; }

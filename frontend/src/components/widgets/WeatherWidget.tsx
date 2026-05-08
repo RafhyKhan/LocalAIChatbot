@@ -4,6 +4,7 @@
  * Left/right arrow buttons scroll the card row when all 7 days don't fit.
  * Each day card has a small note field — notes are saved to localStorage.
  */
+import "./WeatherWidget.css";
 import { useEffect, useRef, useState } from "react";
 import { BASE } from "../../api";
 

@@ -15,6 +15,7 @@
  * To remove a source: delete its entry from FETCHERS.
  */
 
+import "./RandomFactWidget.css";
 import { useEffect, useState } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

@@ -1,0 +1,26 @@
+.quote-widget { gap: 0; }
+
+.quote-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--hover);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  flex: 1;
+}
+
+.quote-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.65;
+  font-style: italic;
+  flex: 1;
+}
+
+.quote-author {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}

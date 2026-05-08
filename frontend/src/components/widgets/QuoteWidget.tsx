@@ -2,6 +2,7 @@
  * QuoteWidget — random quote from Firebase, colSpan 1.
  * Spun off from GreetingWidget. The greeting + clock now live in the toolbar.
  */
+import "./QuoteWidget.css";
 import { useEffect, useState } from "react";
 import type { Quote } from "../../widgetTypes";
 

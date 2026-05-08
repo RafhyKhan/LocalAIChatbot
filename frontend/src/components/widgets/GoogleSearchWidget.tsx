@@ -4,6 +4,7 @@
  * - Click a bookmark suggestion to open it directly
  * - BG toggle: queue multiple searches, open all at once
  */
+import "./GoogleSearchWidget.css";
 import { useState, useEffect, useRef } from "react";
 import { BASE } from "../../api";
 

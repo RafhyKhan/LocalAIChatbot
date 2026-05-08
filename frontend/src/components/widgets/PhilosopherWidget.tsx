@@ -6,6 +6,7 @@
  * Source: https://blog.oup.com/category/arts_and_humanities/philosopher-of-the-month/
  */
 
+import "./PhilosopherWidget.css";
 import { useEffect, useState } from "react";
 import { BASE } from "../../api";
 

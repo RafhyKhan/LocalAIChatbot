@@ -1,0 +1,26 @@
+.notes-widget {
+  gap: 10px;
+}
+
+.notes-counts {
+  font-size: 11px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.notes-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 228px;
+  width: 100%;
+}
+.notes-textarea::placeholder { color: var(--dim); }
+.notes-textarea::-webkit-scrollbar { width: 3px; }
+.notes-textarea::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
