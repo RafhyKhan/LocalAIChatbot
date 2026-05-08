@@ -82,7 +82,7 @@ export default function InputArea({
             style={{ color: tokenColour(tokenInfo.used, tokenInfo.limit) }}
             title="Estimated tokens in context (system prompt + last 8 messages)"
           >
-            ~{tokenInfo.used.toLocaleString()} / {tokenInfo.limit.toLocaleString()} tokens
+            ~{tokenInfo.used.toLocaleString()} / {tokenInfo.limit.toLocaleString()} estimated tokens
           </p>
         )}
       </div>
