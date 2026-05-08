@@ -5,18 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { BASE } from "../../api";
-
-interface NewsItem {
-  title: string;
-  link: string;
-  pub_date: string;
-  description: string;
-}
-
-interface NewsData {
-  items: NewsItem[];
-  source: string;
-}
+import type { NewsItem, NewsData } from "../../widgetTypes";
 
 export default function NewsWidget() {
   const [data, setData]       = useState<NewsData | null>(null);

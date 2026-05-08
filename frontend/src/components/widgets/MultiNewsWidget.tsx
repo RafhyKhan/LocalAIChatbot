@@ -5,12 +5,7 @@
  */
 import { useState } from "react";
 import { BASE } from "../../api";
-
-interface NewsItem {
-  title:    string;
-  link:     string;
-  pub_date: string;
-}
+import type { NewsItem } from "../../widgetTypes";
 
 interface SourceState {
   items:   NewsItem[];

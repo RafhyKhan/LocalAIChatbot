@@ -3,13 +3,9 @@
  * Spun off from GreetingWidget. The greeting + clock now live in the toolbar.
  */
 import { useEffect, useState } from "react";
+import type { Quote } from "../../widgetTypes";
 
 const QUOTE_URL = import.meta.env.VITE_QUOTE_URL ?? "";
-
-interface Quote {
-  text:   string;
-  author: string;
-}
 
 export default function QuoteWidget() {
   const [quote,   setQuote]   = useState<Quote | null>(null);

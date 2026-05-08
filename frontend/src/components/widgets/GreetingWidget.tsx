@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
+import type { Quote } from "../../widgetTypes";
 
 // ── Time helpers ──────────────────────────────────────────────────────────────
 
@@ -43,11 +44,6 @@ const REFRESH   = true;
 //                  false = same quote until you manually refresh the page
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-interface Quote {
-  text:   string;
-  author: string;
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
