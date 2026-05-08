@@ -48,6 +48,7 @@ import GoogleSearchWidget  from "./widgets/GoogleSearchWidget";
 import MultiNewsWidget     from "./widgets/MultiNewsWidget";
 import CalendarWidget     from "./widgets/CalendarWidget";
 import CheckboxWidget     from "./widgets/CheckboxWidget";
+import CounterWidget      from "./widgets/CounterWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -74,6 +75,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "multinews",   icon: "🌍", label: "World News",    description: "BBC, Reuters, AP, Al Jazeera, CBC, CTV + local news", colSpan: 1 },
   { id: "calendar",    icon: "📅", label: "Google Calendar", description: "Google Calendar events + daily weather + agenda", colSpan: 2 },
   { id: "checkbox",    icon: "✅", label: "Checklist",       description: "10 checkboxes with a persistent completion counter", colSpan: 1 },
+  { id: "counter",     icon: "🔢", label: "Counter",         description: "Simple named counter with + and − buttons",           colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -91,6 +93,7 @@ function renderWidget(id: string) {
     case "multinews":    return <MultiNewsWidget />;
     case "calendar":     return <CalendarWidget />;
     case "checkbox":     return <CheckboxWidget />;
+    case "counter":      return <CounterWidget />;
     default:             return null;
   }
 }
