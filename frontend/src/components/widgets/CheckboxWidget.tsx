@@ -46,10 +46,11 @@ interface Task {
 }
 
 interface Section {
-  id:    string;
-  type:  "favourites" | "unsorted" | "custom";
-  title: string;
-  tasks: Task[];
+  id:      string;
+  type:    "favourites" | "unsorted" | "custom";
+  title:   string;
+  tasks:   Task[];
+  starred?: boolean;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -243,6 +244,9 @@ function SortableSection({
   onStartEditSec,
   onEditSecChange,
   onCommitEditSec,
+  isOpen,
+  onToggleOpen,
+  onToggleStar,
 }: {
   section:          Section;
   expanded:         boolean;
@@ -262,6 +266,9 @@ function SortableSection({
   onStartEditSec:   (s: Section) => void;
   onEditSecChange:  (v: string) => void;
   onCommitEditSec:  () => void;
+  isOpen:           boolean;
+  onToggleOpen:     () => void;
+  onToggleStar:     () => void;
 }) {
   const isFav = section.type === "favourites";
 
@@ -295,6 +302,28 @@ function SortableSection({
           <span className="cb-section-handle cb-section-handle--hidden" />
         )}
 
+        {/* Open/close toggle — only for non-Favourites sections in expanded mode */}
+        {expanded && !isFav && (
+          <button
+            className="cb-section-toggle"
+            onClick={onToggleOpen}
+            title={isOpen ? "Collapse section" : "Expand section"}
+          >
+            {isOpen ? "∧" : "∨"}
+          </button>
+        )}
+
+        {/* Section star — pin as toolbar shortcut (non-Favourites, expanded only) */}
+        {expanded && !isFav && (
+          <button
+            className={`cb-section-star${section.starred ? " cb-section-star-active" : ""}`}
+            onClick={onToggleStar}
+            title={section.starred ? "Remove shortcut" : "Pin as shortcut"}
+          >
+            {section.starred ? "★" : "☆"}
+          </button>
+        )}
+
         {/* Title */}
         {expanded && !isFav && isEditingSec ? (
           <input
@@ -321,8 +350,8 @@ function SortableSection({
         )}
       </div>
 
-      {/* Section body — droppable for task cross-section + +10 */}
-      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+      {/* Section body — always shown for Favourites; toggled for others */}
+      {(isFav || isOpen) && <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <SectionDropBody sectionId={section.id} isFav={isFav} activeType={activeType}>
           <div className="cb-section-task-grid">
             {section.tasks.map(task => (
@@ -347,7 +376,7 @@ function SortableSection({
             )}
           </div>
         </SectionDropBody>
-      </SortableContext>
+      </SortableContext>}
     </div>
   );
 }
@@ -363,6 +392,8 @@ export default function CheckboxWidget() {
   const [editSecId,   setEditSecId]   = useState<string | null>(null);
   const [editSecVal,  setEditSecVal]  = useState("");
   const [activeType,  setActiveType]  = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+  const [allOpen,      setAllOpen]      = useState(false);
 
   const syncedRef    = useRef(false);
   const sectionsRef  = useRef<Section[]>([]);  // stable ref for drag handlers
@@ -501,7 +532,11 @@ export default function CheckboxWidget() {
     if (!editSecId) return;
     const val = editSecVal.trim();
     if (val) {
-      updateSections(secs => secs.map(s => s.id === editSecId ? { ...s, title: val } : s));
+      updateSections(secs => secs.map(s => {
+        if (s.id !== editSecId) return s;
+        const titleChanged = s.title !== val;
+        return { ...s, title: val, ...(titleChanged ? { starred: false } : {}) };
+      }));
     }
     setEditSecId(null);
   }, [editSecId, editSecVal]);
@@ -521,6 +556,52 @@ export default function CheckboxWidget() {
       );
     });
   }, []);
+
+  // ── Expand / collapse widget ──────────────────────────────────────────────
+
+  function toggleExpanded() {
+    const next = !expanded;
+    setExpanded(next);
+    if (!next) { setOpenSections(new Set()); setAllOpen(false); }
+    setEditTaskId(null);
+    setEditSecId(null);
+  }
+
+  function toggleAll() {
+    const next = !allOpen;
+    setAllOpen(next);
+    if (next) {
+      // Open every non-Favourites section
+      const ids = sections.filter(s => s.type !== "favourites").map(s => s.id);
+      setOpenSections(new Set(ids));
+    } else {
+      setOpenSections(new Set());
+    }
+  }
+
+  function toggleSectionOpen(sectionId: string) {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  }
+
+  function toggleSectionStar(sectionId: string) {
+    setSections(prev => prev.map(s =>
+      s.id === sectionId ? { ...s, starred: !s.starred } : s
+    ));
+  }
+
+  function openSection(sectionId: string) {
+    setOpenSections(prev => {
+      if (prev.has(sectionId)) return prev; // already open — no-op
+      const next = new Set(prev);
+      next.add(sectionId);
+      return next;
+    });
+  }
 
   // ── Add section ───────────────────────────────────────────────────────────
 
@@ -697,7 +778,7 @@ export default function CheckboxWidget() {
       <div className="checkbox-expand-row">
         <button
           className="checkbox-expand-btn"
-          onClick={() => { setExpanded(v => !v); setEditTaskId(null); setEditSecId(null); }}
+          onClick={toggleExpanded}
           title={expanded ? "Collapse" : "Expand"}
         >
           {expanded ? "∧" : "∨"}
@@ -727,6 +808,9 @@ export default function CheckboxWidget() {
             onStartEditSec={() => {}}
             onEditSecChange={() => {}}
             onCommitEditSec={() => {}}
+            isOpen={false}
+            onToggleOpen={() => {}}
+            onToggleStar={() => {}}
           />
         </div>
       )}
@@ -742,6 +826,23 @@ export default function CheckboxWidget() {
           onDragCancel={onDragCancel}
         >
           <div className="cb-controls">
+            <button
+              className="cb-toggle-all-btn"
+              onClick={toggleAll}
+              title={allOpen ? "Collapse all sections" : "Expand all sections"}
+            >
+              {allOpen ? "∧ All" : "∨ All"}
+            </button>
+            {sections.filter(s => s.starred).map(s => (
+              <button
+                key={s.id}
+                className="cb-shortcut-btn"
+                onClick={() => openSection(s.id)}
+                title={`Jump to ${s.title}`}
+              >
+                ★ {s.title}
+              </button>
+            ))}
             <button className="cb-add-section-btn" onClick={addSection}>+ Add Section</button>
             <Add10Button />
           </div>
@@ -769,6 +870,9 @@ export default function CheckboxWidget() {
                   onStartEditSec={onStartEditSec}
                   onEditSecChange={setEditSecVal}
                   onCommitEditSec={onCommitEditSec}
+                  isOpen={section.type === "favourites" || openSections.has(section.id)}
+                  onToggleOpen={() => toggleSectionOpen(section.id)}
+                  onToggleStar={() => toggleSectionStar(section.id)}
                 />
               ))}
               {sections.length === 0 && (
