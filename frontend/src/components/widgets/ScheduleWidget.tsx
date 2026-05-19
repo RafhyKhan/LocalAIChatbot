@@ -68,7 +68,7 @@ interface Task {
 
 function nowInMinutes(): number {
   const d = new Date();
-  return d.getHours() * 60 + d.getMinutes();
+  return d.getHours() * 60 + d.getMinutes() + 10; // 10 min ahead so next slot shows early
 }
 
 function fmt(minutes: number): string {
@@ -116,9 +116,9 @@ export default function ScheduleWidget() {
       .catch(() => {});
   }, []);
 
-  // Tick every minute
+  // Tick every 10 minutes
   useEffect(() => {
-    const id = setInterval(() => setNow(nowInMinutes()), 60_000);
+    const id = setInterval(() => setNow(nowInMinutes()), 600_000);
     return () => clearInterval(id);
   }, []);
 
