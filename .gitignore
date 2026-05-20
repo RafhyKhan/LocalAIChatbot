@@ -27,3 +27,4 @@ frontend/public/overlay/background3.jpg
 backend/_auth_url.txt
 backend/_code_verifier.txt
 backend/logs/app.log
+/launcher
