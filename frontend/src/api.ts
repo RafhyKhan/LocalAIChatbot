@@ -80,7 +80,11 @@ export async function fetchRagIndexStatus(): Promise<{
 }
 
 export async function deleteRagDocument(filename: string): Promise<void> {
-  await fetch(`${BASE}/api/rag/documents/${encodeURIComponent(filename)}`, { method: "DELETE" });
+  const r = await fetch(`${BASE}/api/rag/documents/${encodeURIComponent(filename)}`, { method: "DELETE" });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.detail ?? `Delete failed (${r.status})`);
+  }
 }
 
 export interface ImageAttachment {

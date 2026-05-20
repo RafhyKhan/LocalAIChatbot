@@ -32,6 +32,7 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
   const [ragIndexing,  setRagIndexing]  = useState(false);
   const [ragResults,   setRagResults]   = useState<{ name: string; status: string; chunks?: number; error?: string }[]>([]);
   const [deletingDoc,  setDeletingDoc]  = useState<string | null>(null);
+  const [deleteError,  setDeleteError]  = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -141,9 +142,12 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
 
   async function handleDeleteDoc(name: string) {
     setDeletingDoc(name);
+    setDeleteError(null);
     try {
       await deleteRagDocument(name);
       setRagDocs(prev => prev.filter(d => d.name !== name));
+    } catch (e: unknown) {
+      setDeleteError(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setDeletingDoc(null);
     }
@@ -274,6 +278,11 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Delete error */}
+        {deleteError && (
+          <p className="settings-hint" style={{ color: "#f87171" }}>✗ {deleteError}</p>
         )}
 
         {/* Indexed documents list */}

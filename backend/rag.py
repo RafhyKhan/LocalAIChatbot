@@ -205,9 +205,16 @@ def get_indexed_documents() -> list[dict]:
 
 def delete_document(name: str) -> bool:
     """Remove all indexed chunks for a given filename. Returns False if not found."""
-    col      = _get_collection()
-    existing = col.get(where={"source": name})
+    col = _get_collection()
+
+    # Fetch all matching IDs — use a large explicit limit so large docs aren't truncated
+    existing = col.get(where={"source": name}, limit=100_000, include=[])
     if not existing["ids"]:
         return False
-    col.delete(ids=existing["ids"])
+
+    # Delete in batches (same limit as add — avoids ChromaDB batch size cap)
+    BATCH = 5000
+    ids = existing["ids"]
+    for start in range(0, len(ids), BATCH):
+        col.delete(ids=ids[start : start + BATCH])
     return True
