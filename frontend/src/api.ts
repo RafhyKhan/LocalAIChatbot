@@ -55,9 +55,15 @@ export async function fetchContextPreview(): Promise<string> {
   return d.text ?? "";
 }
 
+export interface ImageAttachment {
+  data: string;  // base64, no data-URI prefix
+  mime: string;  // e.g. "image/jpeg"
+}
+
 export function streamChat(
   conversationId: string,
   message: string,
+  image: ImageAttachment | null,
   onDelta: (d: string) => void,
   onDone: () => void,
   onError: (e: string) => void,
@@ -69,10 +75,13 @@ export function streamChat(
 
   (async () => {
     try {
+      const body: Record<string, unknown> = { conversation_id: conversationId, message };
+      if (image) { body.image_data = image.data; body.image_mime = image.mime; }
+
       const res = await fetch(`${BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversation_id: conversationId, message }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
 

@@ -103,6 +103,11 @@ SYSTEM_PROMPT = (
     "You have a convert_units tool. "
     "ALWAYS use it for any unit conversion — never estimate conversions yourself."
     "\n\n"
+    "You can receive and analyse images attached to messages. "
+    "When an image is provided, describe it, answer questions about it, and use it as context for the conversation. "
+    "You can identify objects, scenes, text, colors, and composition in images. "
+    "Be upfront that your internal image resolution is limited — you may miss fine detail or struggle with precise counting in dense scenes. "
+    "\n\n"
     "You are a helpful assistant, not an authoritative source of truth. "
     "You can and do make mistakes. When uncertain, say so clearly. "
     "Always distinguish between what you know from training and what you found via web search. "
@@ -112,7 +117,9 @@ SYSTEM_PROMPT = (
 
 class ChatRequest(BaseModel):
     conversation_id: str
-    message: str
+    message:         str
+    image_data:      str | None = None  # base64-encoded image (no data-URI prefix)
+    image_mime:      str | None = None  # e.g. "image/jpeg"
 
 
 class ProfileData(BaseModel):
@@ -749,7 +756,19 @@ async def chat(req: ChatRequest, request: Request):
     # Build base context before persisting so the new message isn't in the window
     messages = _build_base_messages(req.conversation_id, req.message)
 
-    # Persist user message to SQLite + txt + ChromaDB
+    # If an image was attached, replace the last (user) message with a multimodal block
+    if req.image_data and req.image_mime:
+        messages[-1] = {
+            "role": "user",
+            "content": [
+                {"type": "text",      "text": req.message},
+                {"type": "image_url", "image_url": {
+                    "url": f"data:{req.image_mime};base64,{req.image_data}"
+                }},
+            ],
+        }
+
+    # Persist user message to SQLite + txt + ChromaDB (text only — images not stored)
     conv_store.add_message(req.conversation_id, "user", req.message)
 
     async def stream():

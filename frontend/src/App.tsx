@@ -9,6 +9,7 @@ import {
   fetchContextPreview,
   streamChat,
 } from "./api";
+import type { ImageAttachment } from "./api";
 import Sidebar      from "./components/Sidebar";
 import Dashboard     from "./components/Dashboard";
 import ChatMessage   from "./components/ChatMessage";
@@ -29,6 +30,7 @@ export default function App() {
   const [calculating, setCalculating] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
   const [tokenInfo, setTokenInfo] = useState<{ used: number; limit: number; remaining: number } | null>(null);
+  const [sessionImages, setSessionImages] = useState<Record<number, string>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef  = useRef<(() => void) | null>(null);
 
@@ -65,6 +67,7 @@ export default function App() {
     setActiveId(id);
     setMessages(data.messages ?? []);
     setStreamText("");
+    setSessionImages({});
     setTokenInfo(await fetchTokens(id));
     setPage("chat"); // clicking a conversation always goes to chat
   }
@@ -84,8 +87,16 @@ export default function App() {
     if (activeId === id) { setActiveId(null); setMessages([]); }
   }
 
-  function send(message: string) {
+  function send(message: string, image: ImageAttachment | null = null, previewUrl?: string) {
     if (!activeId) return;
+
+    // Store preview URL keyed by the index this message will occupy
+    if (previewUrl) {
+      setMessages(prev => {
+        setSessionImages(imgs => ({ ...imgs, [prev.length]: previewUrl }));
+        return prev;
+      });
+    }
 
     // Optimistically show user message
     setMessages((prev) => [
@@ -101,6 +112,7 @@ export default function App() {
     const abort = streamChat(
       activeId,
       message,
+      image,
       (d) => { setSearching(false); setCalculating(false); setStreamText((t) => t + d); },
       async () => {
         abortRef.current = null;
@@ -170,7 +182,9 @@ export default function App() {
         ) : (
           <>
             <div className="messages">
-              {messages.map((m, i) => <ChatMessage key={i} message={m} />)}
+              {messages.map((m, i) => (
+                <ChatMessage key={i} message={m} imagePreviewUrl={m.role === "user" ? sessionImages[i] : undefined} />
+              ))}
 
               {searching && (
                 <div className="msg-row msg-assistant">
@@ -220,7 +234,7 @@ export default function App() {
               )}
               <div ref={bottomRef} />
             </div>
-            <InputArea onSend={send} onStop={handleStop} disabled={streaming} tokenInfo={tokenInfo} />
+            <InputArea onSend={(msg, img, url) => send(msg, img ?? null, url)} onStop={handleStop} disabled={streaming} tokenInfo={tokenInfo} />
           </>
         )}
       </main>
