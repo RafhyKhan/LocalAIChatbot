@@ -8,9 +8,10 @@
  * you press "📡 Live Data Update" in the sidebar.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Conversation } from "../types";
-import { fetchProfile, saveProfile, fetchContextPreview, fetchArchivedConversations, restoreConversation } from "../api";
+import { fetchProfile, saveProfile, fetchContextPreview, fetchArchivedConversations, restoreConversation, fetchRagDocuments, triggerRagIndex, fetchRagIndexStatus, deleteRagDocument } from "../api";
+import type { RagDocument } from "../api";
 
 const MAX_CHARS = 150;
 
@@ -26,6 +27,13 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
   const [archiveLoading, setArchiveLoading] = useState(true);
   const [restoringId,    setRestoringId]    = useState<string | null>(null);
 
+  const [ragDocs,      setRagDocs]      = useState<RagDocument[]>([]);
+  const [ragLoading,   setRagLoading]   = useState(true);
+  const [ragIndexing,  setRagIndexing]  = useState(false);
+  const [ragResults,   setRagResults]   = useState<{ name: string; status: string; chunks?: number; error?: string }[]>([]);
+  const [deletingDoc,  setDeletingDoc]  = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     Promise.all([fetchProfile(), fetchContextPreview()])
       .then(([profile, preview]) => {
@@ -39,6 +47,34 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
       .then(setArchived)
       .catch(() => setArchived([]))
       .finally(() => setArchiveLoading(false));
+
+    fetchRagDocuments()
+      .then(setRagDocs)
+      .catch(() => setRagDocs([]))
+      .finally(() => setRagLoading(false));
+
+    // Resume polling if indexing was already running
+    fetchRagIndexStatus().then(status => {
+      if (status.running) {
+        setRagIndexing(true);
+        pollRef.current = setInterval(async () => {
+          try {
+            const s = await fetchRagIndexStatus();
+            if (!s.running) {
+              clearInterval(pollRef.current!);
+              pollRef.current = null;
+              setRagResults(s.results);
+              setRagDocs(await fetchRagDocuments());
+              setRagIndexing(false);
+            }
+          } catch {
+            clearInterval(pollRef.current!);
+            pollRef.current = null;
+            setRagIndexing(false);
+          }
+        }, 3000);
+      }
+    }).catch(() => {});
   }, []);
 
   async function handleRestore(id: string) {
@@ -68,6 +104,48 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
       setPreviewText(await fetchContextPreview());
     } finally {
       setPreviewLoading(false);
+    }
+  }
+
+  async function handleRagIndex() {
+    setRagIndexing(true);
+    setRagResults([]);
+    try {
+      await triggerRagIndex();
+    } catch {
+      setRagIndexing(false);
+      return;
+    }
+    // Poll until background indexing completes
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await fetchRagIndexStatus();
+        if (!status.running) {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setRagResults(status.results);
+          setRagDocs(await fetchRagDocuments());
+          setRagIndexing(false);
+        }
+      } catch {
+        clearInterval(pollRef.current!);
+        pollRef.current = null;
+        setRagIndexing(false);
+      }
+    }, 3000);
+  }
+
+  // Clean up poll on unmount
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+  async function handleDeleteDoc(name: string) {
+    setDeletingDoc(name);
+    try {
+      await deleteRagDocument(name);
+      setRagDocs(prev => prev.filter(d => d.name !== name));
+    } finally {
+      setDeletingDoc(null);
     }
   }
 
@@ -157,6 +235,72 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
             ? "Loading…"
             : previewText || "(no data — connect Google Calendar or add checklist tasks)"}
         </pre>
+      </section>
+
+      {/* ── Document Library (RAG) ── */}
+      <section className="settings-section">
+        <div className="settings-preview-header">
+          <h3 className="settings-section-title">Document Library</h3>
+          <button
+            className="settings-preview-refresh"
+            onClick={handleRagIndex}
+            disabled={ragIndexing}
+            title="Index all PDFs in backend/docs/"
+          >
+            {ragIndexing ? "Indexing…" : "🔄 Index Documents"}
+          </button>
+        </div>
+        <p className="settings-hint">
+          Drop PDF files into <code className="settings-code">backend/docs/</code> then click
+          {" "}<strong>Index Documents</strong>. RainAI will reference them automatically when relevant.
+        </p>
+        {ragIndexing && (
+          <p className="settings-hint" style={{ color: "#facc15" }}>
+            ⏳ Indexing in background — large PDFs may take a few minutes…
+          </p>
+        )}
+
+        {/* Index results */}
+        {ragResults.length > 0 && (
+          <div className="rag-results">
+            {ragResults.map(r => (
+              <div key={r.name} className={`rag-result-item rag-result-${r.status}`}>
+                <span className="rag-result-name">{r.name}</span>
+                <span className="rag-result-status">
+                  {r.status === "indexed"  && `✓ ${r.chunks} chunks`}
+                  {r.status === "skipped"  && `— unchanged (${r.chunks} chunks)`}
+                  {r.status === "error"    && `✗ ${r.error}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Indexed documents list */}
+        {ragLoading ? (
+          <div className="settings-loading">Loading…</div>
+        ) : ragDocs.length === 0 ? (
+          <p className="settings-archive-empty">No documents indexed yet.</p>
+        ) : (
+          <div className="rag-doc-list">
+            {ragDocs.map(doc => (
+              <div key={doc.name} className="rag-doc-item">
+                <div className="rag-doc-info">
+                  <span className="rag-doc-name">{doc.name}</span>
+                  <span className="rag-doc-chunks">{doc.chunks} chunks</span>
+                </div>
+                <button
+                  className="rag-doc-delete"
+                  onClick={() => handleDeleteDoc(doc.name)}
+                  disabled={deletingDoc === doc.name}
+                  title="Remove from index"
+                >
+                  {deletingDoc === doc.name ? "…" : "×"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── Archived Chats ── */}

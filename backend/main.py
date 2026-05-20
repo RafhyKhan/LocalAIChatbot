@@ -33,6 +33,7 @@ from openai import AsyncOpenAI
 
 import conversations as conv_store
 import memory
+import rag
 import database as db
 import search as searcher
 import calculator as calc
@@ -520,6 +521,60 @@ def get_context_preview():
     return {"text": _build_context_block()}
 
 
+# ── RAG endpoints ──────────────────────────────────────────────────────────────
+
+# Background indexing state — tracks whether indexing is currently running
+_rag_indexing = False
+_rag_index_results: list = []
+
+
+@app.get("/api/rag/documents")
+def get_rag_documents():
+    """List all indexed documents with chunk counts."""
+    return {"documents": rag.get_indexed_documents()}
+
+
+@app.get("/api/rag/index/status")
+def get_rag_index_status():
+    """Poll whether background indexing is still running and get latest results."""
+    return {"running": _rag_indexing, "results": _rag_index_results}
+
+
+@app.post("/api/rag/index")
+async def trigger_rag_index():
+    """
+    Kick off indexing of all PDFs in backend/docs/ as a background task.
+    Returns immediately — poll /api/rag/index/status for progress.
+    """
+    global _rag_indexing, _rag_index_results
+    if _rag_indexing:
+        return {"started": False, "message": "Indexing already in progress"}
+
+    _rag_indexing = True
+    _rag_index_results = []
+
+    async def run_index():
+        global _rag_indexing, _rag_index_results
+        try:
+            loop    = asyncio.get_event_loop()
+            results = await loop.run_in_executor(None, rag.index_folder)
+            _rag_index_results = results
+        finally:
+            _rag_indexing = False
+
+    asyncio.create_task(run_index())
+    return {"started": True, "message": "Indexing started in background"}
+
+
+@app.delete("/api/rag/documents/{filename}")
+def delete_rag_document(filename: str):
+    """Remove a document from the RAG index by filename."""
+    found = rag.delete_document(filename)
+    if not found:
+        raise HTTPException(status_code=404, detail="Document not found in index")
+    return {"ok": True}
+
+
 @app.get("/api/bookmarks")
 def get_bookmarks():
     """Parse Chrome bookmarks HTML and return [{title, url}] list."""
@@ -700,6 +755,21 @@ def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
             + "\n\n".join(snippets)
             + "\n\nUse this context if relevant, but do not repeat it verbatim."
         )
+
+    # Inject relevant RAG chunks if any documents are indexed
+    try:
+        rag_hits = rag.query_rag(user_message)
+        if rag_hits:
+            lines = ["\nRelevant documentation from your indexed files:"]
+            for source, chunk in rag_hits:
+                lines.append(f"\n[{source}]\n{chunk}")
+            lines.append(
+                "\nUse this documentation to answer accurately. "
+                "Cite the source filename when referencing it."
+            )
+            system_parts.append("\n".join(lines))
+    except Exception:
+        pass  # RAG failure never blocks a chat response
 
     messages = [{"role": "system", "content": "\n".join(system_parts)}]
     for m in recent:

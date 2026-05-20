@@ -12,6 +12,7 @@ backend/tasks.json
 backend/checklist.json
 backend/checklist-initial.json
 backend/profile.json
+backend/docs
 frontend/node_modules/
 frontend/src/data/
 frontend/.env

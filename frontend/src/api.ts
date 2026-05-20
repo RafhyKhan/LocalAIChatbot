@@ -55,6 +55,34 @@ export async function fetchContextPreview(): Promise<string> {
   return d.text ?? "";
 }
 
+export interface RagDocument {
+  name:   string;
+  chunks: number;
+}
+
+export async function fetchRagDocuments(): Promise<RagDocument[]> {
+  const r = await fetch(`${BASE}/api/rag/documents`);
+  const d = await r.json();
+  return d.documents ?? [];
+}
+
+export async function triggerRagIndex(): Promise<{ started: boolean; message: string }> {
+  const r = await fetch(`${BASE}/api/rag/index`, { method: "POST" });
+  return r.json();
+}
+
+export async function fetchRagIndexStatus(): Promise<{
+  running: boolean;
+  results: { name: string; status: string; chunks?: number; error?: string }[];
+}> {
+  const r = await fetch(`${BASE}/api/rag/index/status`);
+  return r.json();
+}
+
+export async function deleteRagDocument(filename: string): Promise<void> {
+  await fetch(`${BASE}/api/rag/documents/${encodeURIComponent(filename)}`, { method: "DELETE" });
+}
+
 export interface ImageAttachment {
   data: string;  // base64, no data-URI prefix
   mime: string;  // e.g. "image/jpeg"
