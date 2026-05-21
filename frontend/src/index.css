@@ -113,6 +113,20 @@ a { color: inherit; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: text;
+}
+
+.conv-title-input {
+  display: block;
+  width: 100%;
+  font-size: 13px;
+  color: var(--text);
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 1px 5px;
+  outline: none;
+  box-sizing: border-box;
 }
 
 .conv-time {

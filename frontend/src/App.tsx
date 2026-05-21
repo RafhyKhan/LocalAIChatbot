@@ -5,6 +5,7 @@ import {
   createConversation,
   fetchConversation,
   deleteConversation,
+  renameConversation,
   fetchTokens,
   fetchContextPreview,
   streamChat,
@@ -87,6 +88,11 @@ export default function App() {
     if (activeId === id) { setActiveId(null); setMessages([]); }
   }
 
+  async function renameConv(id: string, title: string) {
+    await renameConversation(id, title);
+    setConversations((prev) => prev.map((c) => c.id === id ? { ...c, title } : c));
+  }
+
   function send(message: string, image: ImageAttachment | null = null, previewUrl?: string) {
     if (!activeId) return;
 
@@ -161,6 +167,7 @@ export default function App() {
         onSelect={selectConv}
         onNew={newConv}
         onDelete={deleteConv}
+        onRename={renameConv}
         page={page}
         onPageChange={setPage}
         onLiveUpdate={handleLiveUpdate}

@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import type { Conversation } from "../types";
 import { APP_NAME } from "../config";
 
@@ -7,6 +8,7 @@ interface Props {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
+  onRename: (id: string, title: string) => void;
   page: "dashboard" | "chat" | "settings";
   onPageChange: (p: "dashboard" | "chat" | "settings") => void;
   onLiveUpdate: () => void;
@@ -23,7 +25,33 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, page, onPageChange, onLiveUpdate, onOpenSettings }: Props) {
+export default function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, onRename, page, onPageChange, onLiveUpdate, onOpenSettings }: Props) {
+  const [editingId,    setEditingId]    = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId) inputRef.current?.focus();
+  }, [editingId]);
+
+  function startEdit(e: React.MouseEvent, c: Conversation) {
+    e.stopPropagation();
+    setEditingId(c.id);
+    setEditingTitle(c.title);
+  }
+
+  function commitEdit(id: string) {
+    const trimmed = editingTitle.trim();
+    if (trimmed && trimmed !== conversations.find(c => c.id === id)?.title) {
+      onRename(id, trimmed);
+    }
+    setEditingId(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
@@ -71,10 +99,32 @@ export default function Sidebar({ conversations, activeId, onSelect, onNew, onDe
           <div
             key={c.id}
             className={`conv-item${c.id === activeId ? " conv-active" : ""}`}
-            onClick={() => onSelect(c.id)}
+            onClick={() => editingId !== c.id && onSelect(c.id)}
           >
             <div className="conv-info">
-              <span className="conv-title">{c.title}</span>
+              {editingId === c.id ? (
+                <input
+                  ref={inputRef}
+                  className="conv-title-input"
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  onBlur={() => commitEdit(c.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter")  { e.preventDefault(); commitEdit(c.id); }
+                    if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  maxLength={80}
+                />
+              ) : (
+                <span
+                  className="conv-title"
+                  title="Click to rename"
+                  onClick={(e) => startEdit(e, c)}
+                >
+                  {c.title}
+                </span>
+              )}
               <span className="conv-time">{timeAgo(c.updated_at)}</span>
             </div>
             <button

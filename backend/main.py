@@ -413,6 +413,19 @@ def restore_conversation(conv_id: str):
     return {"ok": True}
 
 
+class RenameRequest(BaseModel):
+    title: str
+
+@app.patch("/api/conversations/{conv_id}/title")
+def rename_conversation(conv_id: str, body: RenameRequest):
+    """Rename a conversation."""
+    title = body.title.strip()[:80]
+    if not title:
+        raise HTTPException(status_code=400, detail="Title cannot be empty")
+    conv_store.update_title(conv_id, title)
+    return {"ok": True}
+
+
 @app.get("/api/weather")
 def get_weather_forecast():
     """7-day local forecast from Open-Meteo (used by the dashboard widget)."""
@@ -683,32 +696,6 @@ def get_token_count(conv_id: str):
 
 # ── Title generation ──────────────────────────────────────────────
 
-async def _generate_title(conv_id: str, user_message: str, assistant_reply: str):
-    """Fire-and-forget: short descriptive title based on the first full exchange."""
-    try:
-        exchange = f"User: {user_message}\nAssistant: {assistant_reply[:300]}"
-        resp = await client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Generate a short title (under 55 chars, no quotes, no punctuation at the end) "
-                        "that summarises what this conversation is about. "
-                        "Base it on both the user's question and the assistant's response. "
-                        "Write a brief descriptive phrase, not a question."
-                    ),
-                },
-                {"role": "user", "content": exchange},
-            ],
-            max_tokens=20,
-            stream=False,
-        )
-        title = resp.choices[0].message.content.strip().strip('"').strip("'")
-        if title:
-            conv_store.update_title(conv_id, title[:60])
-    except Exception:
-        pass
 
 
 # ── Context builder ───────────────────────────────────────────────
@@ -955,11 +942,6 @@ async def chat(req: ChatRequest, request: Request):
 
             # Persist the complete assistant response
             conv_store.add_message(req.conversation_id, "assistant", full)
-
-            if is_first:
-                asyncio.create_task(
-                    _generate_title(req.conversation_id, req.message, full)
-                )
 
             yield f"data: {json.dumps({'done': True, 'sources': all_sources})}\n\n"
 

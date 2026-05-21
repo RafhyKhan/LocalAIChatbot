@@ -21,6 +21,14 @@ export async function deleteConversation(id: string): Promise<void> {
   await fetch(`${BASE}/api/conversations/${id}`, { method: "DELETE" });
 }
 
+export async function renameConversation(id: string, title: string): Promise<void> {
+  await fetch(`${BASE}/api/conversations/${id}/title`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+}
+
 export async function fetchArchivedConversations(): Promise<Conversation[]> {
   const r = await fetch(`${BASE}/api/conversations/archived`);
   return r.json();
