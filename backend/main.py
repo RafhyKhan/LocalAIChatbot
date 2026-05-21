@@ -694,10 +694,6 @@ def get_token_count(conv_id: str):
     return {"used": used, "limit": limit, "remaining": max(0, limit - used)}
 
 
-# ── Title generation ──────────────────────────────────────────────
-
-
-
 # ── Context builder ───────────────────────────────────────────────
 
 def _build_base_messages(conv_id: str, user_message: str) -> list[dict]:
@@ -807,8 +803,6 @@ async def chat(req: ChatRequest, request: Request):
     data = conv_store.get_conversation(req.conversation_id)
     if not data:
         raise HTTPException(status_code=404, detail="Conversation not found")
-
-    is_first = len(data["messages"]) == 0
 
     # Build base context before persisting so the new message isn't in the window
     messages = _build_base_messages(req.conversation_id, req.message)
