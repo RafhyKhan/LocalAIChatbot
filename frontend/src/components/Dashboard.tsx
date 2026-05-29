@@ -49,6 +49,7 @@ import MultiNewsWidget     from "./widgets/MultiNewsWidget";
 import CalendarWidget     from "./widgets/CalendarWidget";
 import CheckboxWidget     from "./widgets/CheckboxWidget";
 import CounterWidget      from "./widgets/CounterWidget";
+import ProphetWidget      from "./widgets/ProphetWidget";
 
 // ── Widget registry ───────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "calendar",    icon: "📅", label: "Google Calendar", description: "Google Calendar events + daily weather + agenda", colSpan: 2 },
   { id: "checkbox",    icon: "✅", label: "Checklist",       description: "10 checkboxes with a persistent completion counter", colSpan: 1 },
   { id: "counter",     icon: "🔢", label: "Counter",         description: "Simple named counter with + and − buttons",           colSpan: 1 },
+  { id: "prophet",     icon: "🕌", label: "Prophet Story",   description: "Random story of an Islamic prophet from Ibn Kathir",   colSpan: 1 },
 ];
 
 function renderWidget(id: string) {
@@ -94,6 +96,7 @@ function renderWidget(id: string) {
     case "calendar":     return <CalendarWidget />;
     case "checkbox":     return <CheckboxWidget />;
     case "counter":      return <CounterWidget />;
+    case "prophet":      return <ProphetWidget />;
     default:             return null;
   }
 }
