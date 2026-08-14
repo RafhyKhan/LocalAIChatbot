@@ -2,6 +2,10 @@
 
 A fully local AI assistant and personal dashboard. All data stays on your machine.
 
+RainAI chat window.
+
+<img width="2873" height="1444" alt="RainAIChat" src="https://github.com/user-attachments/assets/a8850f7b-dcfa-483b-a0a9-a1e742f2a0b2" />
+
 ---
 
 ## AI Capabilities
